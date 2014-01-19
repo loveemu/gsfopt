@@ -26,7 +26,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifndef GSFOPT
 #include "zlib.h"
+#else
+#include "../zlib/zlib.h"
+#endif
 #include "unzip.h"
 
 #ifdef STDC

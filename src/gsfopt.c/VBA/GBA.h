@@ -81,10 +81,13 @@ extern bool V_FLAG;
 extern bool armIrqEnable;
 extern bool armState;
 extern int armMode;
+#ifndef GSFOPT
 extern void (*cpuSaveGameFunc)(u32,u8);
+#endif
 
 extern bool freezeWorkRAM[0x40000];
 extern bool freezeInternalRAM[0x8000];
+#ifndef GSFOPT
 extern bool CPUReadGSASnapshot(const char *);
 extern bool CPUWriteGSASnapshot(const char *, const char *, const char *, const char *);
 extern bool CPUWriteBatteryFile(const char *);
@@ -93,9 +96,12 @@ extern bool CPUExportEepromFile(const char *);
 extern bool CPUImportEepromFile(const char *);
 extern bool CPUWritePNGFile(const char *);
 extern bool CPUWriteBMPFile(const char *);
+#endif
 extern void CPUCleanUp();
+#ifndef GSFOPT
 extern void CPUUpdateRender();
 extern bool CPUReadMemState(char *, int);
+#endif
 extern bool CPUReadState(const char *);
 extern bool CPUWriteMemState(char *, int);
 extern bool CPUWriteState(const char *);
@@ -112,6 +118,15 @@ extern bool CPUIsZipFile(const char *);
 #ifdef PROFILING
 extern void cpuProfil(char *buffer, int, u32, int);
 extern void cpuEnableProfiling(int hz);
+#ifdef GSFOPT
+extern void systemMessage(int number, const char *defaultMsg, ...);
+extern void systemSoundShutdown();
+extern void systemSoundPause();
+extern void systemSoundReset();
+extern void systemSoundResume();
+extern void systemWriteDataToSoundBuffer();
+extern bool systemCanChangeSoundQuality();
+#endif
 #endif
 
 extern struct EmulatedSystem GBASystem;
@@ -139,9 +154,13 @@ extern struct EmulatedSystem GBASystem;
 #define R14_FIQ  43
 #define SPSR_FIQ 44
 
+#ifndef GSFOPT
 #include "Cheats.h"
+#endif
 #include "Globals.h"
+#ifndef GSFOPT
 #include "EEprom.h"
 #include "Flash.h"
+#endif
 
 #endif //VBA_GBA_H

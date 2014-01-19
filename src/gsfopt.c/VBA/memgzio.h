@@ -9,7 +9,11 @@
  * Adapted from original gzio.c from zlib library by Forgotten
  */
 #ifndef HAVE_ZUTIL_H
+#ifndef GSFOPT
 #include "../win32/include/zlib/zutil.h"
+#else
+#include "../zlib/zutil.h"
+#endif
 #else
 #include <zutil.h>
 #endif

@@ -65,7 +65,11 @@ extern "C" {
 #endif
 
 #ifndef _ZLIB_H
+#ifndef GSFOPT
 #include "zlib.h"
+#else
+#include "../zlib/zlib.h"
+#endif
 #endif
 
 #if defined(STRICTUNZIP) || defined(STRICTZIPUNZIP)

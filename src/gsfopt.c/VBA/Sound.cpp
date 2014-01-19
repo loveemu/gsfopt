@@ -18,6 +18,11 @@
 
 #include <memory.h>
 
+#ifdef GSFOPT
+#include <windows.h>
+#include <stdio.h>
+#endif
+
 #include "GBA.h"
 #include "Globals.h"
 #include "Sound.h"
@@ -94,15 +99,27 @@ int soundShiftClock[16]= {
   1,     // 14
   1      // 15
 };
+#ifdef GSFOPT
+extern "C"
+{
+#endif
 
 int soundVolume = 0;
 
 u8 soundBuffer[6][735];
+#ifndef GSFOPT
 u16 soundFinalWave[1470];
-
 int soundBufferLen = 1470;
+#else
+u16 soundFinalWave[2304];
+int soundBufferLen = 576;
+#endif
 int soundBufferTotalLen = 14700;
+#ifndef GSFOPT
 int soundQuality = 2;
+#else
+int soundQuality = 1;
+#endif
 int soundPaused = 1;
 int soundPlay = 0;
 int soundTicks = soundQuality * USE_TICKS_AS;
@@ -200,6 +217,10 @@ int soundEchoIndex = 0;
 bool soundEcho = false;
 bool soundLowPass = false;
 bool soundReverse = false;
+
+#ifdef GSFOPT
+} // extern "C"
+#endif
 
 variable_desc soundSaveStruct[] = {
   { &soundPaused, sizeof(int) },
@@ -1102,8 +1123,23 @@ void soundMix()
     soundFinalWave[soundBufferIndex++] = res;
 }
 
+#ifdef GSFOPT
+extern "C" void DisplayError (char * Message, ...);
+
+
+unsigned short prevsound[2];
+int prevtime;
+
+extern "C" double decode_pos_ms;
+extern "C" double BPoneshot;
+extern "C" int Optt;
+extern "C" int silencedetected;
+extern "C" int silencelength;
+#endif
+
 void soundTick()
 {
+#ifndef GSFOPT
   if(systemSoundOn) {
     if(soundMasterOn && !stopState) {
       soundChannel1();
@@ -1132,6 +1168,85 @@ void soundTick()
       soundBufferIndex = 0;
     }
   }
+#else
+	decode_pos_ms += (1./44100.)*1000.;
+
+	if(Optt)  //Only render the sound for silence detection purposes
+	{		  //if we are in timing, (and possible auto tagging purposes.
+			  //Otherwise, skip this completely.
+		//if(systemSoundOn) {						//needed?  I don't think so
+		if(soundMasterOn && !stopState) 
+		{
+			soundChannel1();
+			soundChannel2();
+			soundChannel3();
+			soundChannel4();
+			soundDirectSoundA();
+			soundDirectSoundB();
+			soundMix();
+			//check for silence...
+			//if(DetectSilence)
+			//{
+				if(!silencedetected||decode_pos_ms<100)
+				{
+					prevtime=(int)(decode_pos_ms);
+					BPoneshot=decode_pos_ms;
+				}
+				//if((soundFinalWave[soundBufferIndex-2] <=  0x200 || soundFinalWave[soundBufferIndex-2] >=  0xFE00) || 
+				  if ((soundFinalWave[soundBufferIndex-2] - prevsound[0]) <= 0x8 )
+					  //|| (prevsound[0] - soundFinalWave[soundBufferIndex-2]) <= 0x8)
+				{
+					silencedetected++;
+				//	if((silencedetected%0x100)==81)
+				//	DisplayError("Silence Detected count = %d",silencedetected);
+				}
+				else
+					silencedetected=0;
+				prevsound[0]=soundFinalWave[soundBufferIndex-2];
+				//if((soundFinalWave[soundBufferIndex-1] <=  0x200 || soundFinalWave[soundBufferIndex-1] >=  0xFE00) || 
+				  if ((soundFinalWave[soundBufferIndex-1] - prevsound[1]) <= 0x8 )
+		//		   (prevsound[1] - soundFinalWave[soundBufferIndex-1]) <= 0x8)
+					silencedetected++;
+				else
+					silencedetected=0;
+				prevsound[1]=soundFinalWave[soundBufferIndex-1];
+				//if(silencedetected>(silencelength*2*sndSamplesPerSec))
+				if((silencedetected>0)&&((decode_pos_ms - prevtime) > (silencelength*1000)))
+				{
+				//	DisplayError("%d %d %d", silencedetected,silencelength*2*sndSamplesPerSec,sndSamplesPerSec);
+					//printf("\nSILENCE DETECTED\n");
+					//silencedetected=0;
+					//end_of_track();
+					
+				}
+
+			//}
+
+		} 
+		else 
+		{
+			soundFinalWave[soundBufferIndex++] = 0;
+			soundFinalWave[soundBufferIndex++] = 0;
+		}
+		  
+		soundIndex++;
+		    
+		if(2*soundBufferIndex >= soundBufferLen) 
+		{
+			if(systemSoundOn) 
+			{
+				if(soundPaused)
+				{
+					soundResume();
+				}      
+		        
+				systemWriteDataToSoundBuffer();
+			}
+			soundIndex = 0;
+			soundBufferIndex = 0;
+		}
+	}
+#endif
 }
 
 void soundShutdown()
@@ -1267,7 +1382,9 @@ void soundReset()
 
 bool soundInit()
 {
+#ifndef GSFOPT
   if(systemSoundInit()) {
+#endif
     memset(soundBuffer[0], 0, 735*2);
     memset(soundBuffer[1], 0, 735*2);
     memset(soundBuffer[2], 0, 735*2);
@@ -1277,12 +1394,15 @@ bool soundInit()
     
     soundPaused = true;
     return true;
+#ifndef GSFOPT
   }
   return false;
+#endif
 }  
 
 void soundSetQuality(int quality)
 {
+#ifndef GSFOPT
   if(soundQuality != quality && systemCanChangeSoundQuality()) {
     if(!soundOffFlag)
       soundShutdown();
@@ -1299,6 +1419,7 @@ void soundSetQuality(int quality)
     soundIndex = 0;
     soundBufferIndex = 0;
   }
+#endif
 }
 
 void soundSaveGame(gzFile gzFile)

@@ -53,6 +53,7 @@ struct EmulatedSystem {
   void (*emuReset)();
   // clean up memory
   void (*emuCleanUp)();
+#ifndef GSFOPT
   // load battery file
   bool (*emuReadBattery)(const char *);
   // write battery file
@@ -69,14 +70,18 @@ struct EmulatedSystem {
   bool (*emuWritePNG)(const char *);
   // write BMP file
   bool (*emuWriteBMP)(const char *);
+#endif
   // emulator update CPSR (ARM only)
   void (*emuUpdateCPSR)();
+#ifndef GSFOPT
   // emulator has debugger
   bool emuHasDebugger;
+#endif
   // clock ticks to emulate
   int emuCount;
 };
 
+#ifndef GSFOPT
 extern void log(const char *,...);
 
 extern bool systemPauseOnFrame();
@@ -88,8 +93,11 @@ extern bool systemReadJoypads();
 // return information about the given joystick, -1 for default joystick
 extern u32 systemReadJoypad(int);
 extern u32 systemGetClock();
+#endif
 extern void systemMessage(int, const char *, ...);
+#ifndef GSFOPT
 extern void systemSetTitle(const char *);
+#endif
 extern void systemWriteDataToSoundBuffer();
 extern void systemSoundShutdown();
 extern void systemSoundPause();
@@ -97,16 +105,21 @@ extern void systemSoundResume();
 extern void systemSoundReset();
 extern bool systemSoundInit();
 extern void systemScreenMessage(const char *);
+#ifndef GSFOPT
 extern void systemUpdateMotionSensor();
 extern int  systemGetSensorX();
 extern int  systemGetSensorY();
+#endif
 extern bool systemCanChangeSoundQuality();
+#ifndef GSFOPT
 extern void systemShowSpeed(int);
 extern void system10Frames(int);
 extern void systemFrame();
 extern void systemGbBorderOn();
+#endif
 
 extern bool systemSoundOn;
+#ifndef GSFOPT
 extern u16 systemColorMap16[0x10000];
 extern u32 systemColorMap32[0x10000];
 extern u16 systemGbPalette[24];
@@ -118,6 +131,7 @@ extern int systemDebug;
 extern int systemVerbose;
 extern int systemFrameSkip;
 extern int systemSaveUpdateCounter;
+#endif
 
 #define SYSTEM_SAVE_UPDATED 30
 #define SYSTEM_SAVE_NOT_UPDATED 0

@@ -25,21 +25,31 @@
 #include "GBA.h"
 #include "GBAinline.h"
 #include "Globals.h"
+#ifndef GSFOPT
 #include "Gfx.h"
 #include "EEprom.h"
 #include "Flash.h"
+#endif
 #include "Sound.h"
+#ifndef GSFOPT
 #include "Sram.h"
+#endif
 #include "bios.h"
 #include "unzip.h"
+#ifndef GSFOPT
 #include "Cheats.h"
+#endif
 #include "NLS.h"
+#ifndef GSFOPT
 #include "elf.h"
+#endif
 #include "Util.h"
 #include "Port.h"
+#ifndef GSFOPT
 #include "agbprint.h"
 #ifdef PROFILING
 #include "prof/prof.h"
+#endif
 #endif
 
 #define UPDATE_REG(address, value) WRITE16LE(((u16 *)&ioMem[address]),value)
@@ -57,7 +67,11 @@
   *extCpuLoopTicks = *extClockTicks;\
   *extTicks = *extClockTicks;
 
+#ifndef GSFOPT
 extern int emulating;
+#else
+extern "C" int emulating;
+#endif
 
 int cpuDmaTicksToUpdate = 0;
 int cpuDmaCount = 0;
@@ -74,10 +88,12 @@ bool intState = false;
 bool stopState = false;
 bool holdState = false;
 int holdType = 0;
+#ifndef GSFOPT
 bool cpuSramEnabled = true;
 bool cpuFlashEnabled = true;
 bool cpuEEPROMEnabled = true;
 bool cpuEEPROMSensorEnabled = false;
+#endif
 
 #ifdef PROFILING
 int profilingTicks = 0;
@@ -114,8 +130,10 @@ u32 dma2Source = 0;
 u32 dma2Dest = 0;
 u32 dma3Source = 0;
 u32 dma3Dest = 0;
+#ifndef GSFOPT
 void (*cpuSaveGameFunc)(u32,u8) = flashSaveDecide;
 void (*renderLine)() = mode0RenderLine;
+#endif
 bool fxOn = false;
 bool windowOn = false;
 int frameCount = 0;
@@ -368,6 +386,7 @@ u32 myROM[] = {
 0x03007FE0
 };
 
+#ifndef GSFOPT
 variable_desc saveGameStruct[] = {
   { &DISPCNT  , sizeof(u16) },
   { &DISPSTAT , sizeof(u16) },
@@ -486,6 +505,7 @@ variable_desc saveGameStruct[] = {
   { &saveType , sizeof(int) },
   { NULL, 0 } 
 };
+#endif
 
 //int cpuLoopTicks = 0;
 int cpuSavedTicks = 0;
@@ -558,6 +578,7 @@ inline int CPUUpdateTicks()
   return cpuLoopTicks;
 }
 
+#ifndef GSFOPT
 void CPUUpdateWindow0()
 {
   int x00 = WIN0H>>8;
@@ -1198,6 +1219,7 @@ bool CPUIsELF(const char *file)
   }
   return false;
 }
+#endif
 
 void CPUCleanUp()
 {
@@ -1251,10 +1273,12 @@ void CPUCleanUp()
     free(ioMem);
     ioMem = NULL;
   }
-  
+
+#ifndef GSFOPT  
   elfCleanUp();
 
   systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+#endif
 
   emulating = 0;
 }
@@ -1267,8 +1291,10 @@ int CPULoadRom(const char *szFile)
     CPUCleanUp();
   }
 
+#ifndef GSFOPT
   systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
-  
+#endif
+
   rom = (u8 *)malloc(0x2000000);
   if(rom == NULL) {
     systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
@@ -1286,6 +1312,7 @@ int CPULoadRom(const char *szFile)
   if(cpuIsMultiBoot)
     whereToLoad = workRAM;
 
+#ifndef GSFOPT
   if(CPUIsELF(szFile)) {
     FILE *f = fopen(szFile, "rb");
     if(!f) {
@@ -1306,7 +1333,9 @@ int CPULoadRom(const char *szFile)
       elfCleanUp();
       return 0;
     }
-  } else if(!utilLoad(szFile,
+  } else
+#endif
+  if(!utilLoad(szFile,
                       utilIsGBAImage,
                       whereToLoad,
                       size)) {
@@ -1374,11 +1403,14 @@ int CPULoadRom(const char *szFile)
     return 0;
   }      
 
+#ifndef GSFOPT
   CPUUpdateRenderBuffers(true);
+#endif
 
   return size;
 }
 
+#ifndef GSFOPT
 void CPUUpdateRender()
 {
   switch(DISPCNT & 7) {
@@ -1439,6 +1471,7 @@ void CPUUpdateRender()
     break;
   }
 }
+#endif
 
 void CPUUpdateCPSR()
 {
@@ -1671,10 +1704,12 @@ void CPUSoftwareInterrupt(int comment)
     return;
   }
 #endif
+#ifndef GSFOPT
   if(comment == 0xfa) {
     agbPrintFlush();
     return;
   }
+#endif
 #ifdef SDL
   if(comment == 0xf9) {
     emulating = 0;
@@ -1725,9 +1760,11 @@ void CPUSoftwareInterrupt(int comment)
           VCOUNT);      
     }
 #endif    
+#ifndef GSFOPT
     holdState = true;
     holdType = -1;
     stopState = true;
+#endif
     break;
   case 0x04:
 #ifdef DEV_VERSION
@@ -2202,11 +2239,13 @@ void CPUUpdateRegister(u32 address, u16 value)
         }
         //        (*renderLine)();
       }
+#ifndef GSFOPT
       CPUUpdateRender();
       // we only care about changes in BG0-BG3
       if(changeBG)
         CPUUpdateRenderBuffers(false);
       //      CPUUpdateTicks();
+#endif
     }
     break;
   case 0x04:
@@ -2281,24 +2320,32 @@ void CPUUpdateRegister(u32 address, u16 value)
     UPDATE_REG(0x26, BG2PD);
     break;
   case 0x28:
+#ifndef GSFOPT
     BG2X_L = value;
     UPDATE_REG(0x28, BG2X_L);
     gfxBG2Changed |= 1;
+#endif
     break;
   case 0x2A:
+#ifndef GSFOPT
     BG2X_H = (value & 0xFFF);
     UPDATE_REG(0x2A, BG2X_H);
     gfxBG2Changed |= 1;    
+#endif
     break;
   case 0x2C:
+#ifndef GSFOPT
     BG2Y_L = value;
     UPDATE_REG(0x2C, BG2Y_L);
     gfxBG2Changed |= 2;    
+#endif
     break;
   case 0x2E:
+#ifndef GSFOPT
     BG2Y_H = value & 0xFFF;
     UPDATE_REG(0x2E, BG2Y_H);
     gfxBG2Changed |= 2;    
+#endif
     break;
   case 0x30:
     BG3PA = value;
@@ -2317,34 +2364,46 @@ void CPUUpdateRegister(u32 address, u16 value)
     UPDATE_REG(0x36, BG3PD);
     break;
   case 0x38:
+#ifndef GSFOPT
     BG3X_L = value;
     UPDATE_REG(0x38, BG3X_L);
     gfxBG3Changed |= 1;
+#endif
     break;
   case 0x3A:
+#ifndef GSFOPT
     BG3X_H = value & 0xFFF;
     UPDATE_REG(0x3A, BG3X_H);
     gfxBG3Changed |= 1;    
+#endif
     break;
   case 0x3C:
+#ifndef GSFOPT
     BG3Y_L = value;
     UPDATE_REG(0x3C, BG3Y_L);
     gfxBG3Changed |= 2;    
+#endif
     break;
   case 0x3E:
+#ifndef GSFOPT
     BG3Y_H = value & 0xFFF;
     UPDATE_REG(0x3E, BG3Y_H);
     gfxBG3Changed |= 2;    
+#endif
     break;
   case 0x40:
+#ifndef GSFOPT
     WIN0H = value;
     UPDATE_REG(0x40, WIN0H);
     CPUUpdateWindow0();
+#endif
     break;
   case 0x42:
+#ifndef GSFOPT
     WIN1H = value;
     UPDATE_REG(0x42, WIN1H);
     CPUUpdateWindow1();    
+#endif
     break;      
   case 0x44:
     WIN0V = value;
@@ -2370,7 +2429,9 @@ void CPUUpdateRegister(u32 address, u16 value)
     BLDMOD = value & 0x3FFF;
     UPDATE_REG(0x50, BLDMOD);
     fxOn = ((BLDMOD>>6)&3) != 0;
+#ifndef GSFOPT
     CPUUpdateRender();
+#endif
     break;
   case 0x52:
     COLEV = value & 0x1F1F;
@@ -2762,22 +2823,28 @@ void CPUWriteHalfWord(u32 address, u16 value)
     break;
   case 8:
   case 9:
+#ifndef GSFOPT
     if(address == 0x80000c4 || address == 0x80000c6 || address == 0x80000c8) {
       if(!rtcWrite(address, value))
         goto unwritable;
     } else if(!agbPrintWrite(address, value)) goto unwritable;
+#endif
     break;
   case 13:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled) {
       eepromWrite(address, (u8)value);
       break;
     }
+#endif
     goto unwritable;
   case 14:
+#ifndef GSFOPT
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
       break;
     }
+#endif
     goto unwritable;
   default:
   unwritable:
@@ -2892,16 +2959,20 @@ void CPUWriteByte(u32 address, u8 b)
     *((u16 *)&oam[address & 0x3FE]) = (b << 8) | b;
     break;    
   case 13:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled) {
       eepromWrite(address, b);
       break;
     }
+#endif
     goto unwritable;
   case 14:
+#ifndef GSFOPT
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, b);
       break;
     }
+#endif
     // default
   default:
   unwritable:
@@ -2930,11 +3001,14 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
     cpuBiosSwapped = true;
   }
 #endif
+#ifndef GSFOPT
   gbaSaveType = 0;
   eepromInUse = 0;
   saveType = 0;
+#endif
   useBios = false;
-  
+
+#ifndef GSFOPT
   if(useBiosFile) {
     int size = 0x4000;
     if(utilLoad(biosFileName,
@@ -2947,6 +3021,7 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
         systemMessage(MSG_INVALID_BIOS_FILE_SIZE, N_("Invalid BIOS file size"));
     }
   }
+#endif
   
   if(!useBios) {
     memcpy(bios, myROM, sizeof(myROM));
@@ -3014,6 +3089,7 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
 
 void CPUReset()
 {
+#ifndef GSFOPT
   if(gbaSaveType == 0) {
     if(eepromInUse)
       gbaSaveType = 3;
@@ -3028,6 +3104,7 @@ void CPUReset()
       }
   }
   rtcReset();
+#endif
   // clen registers
   memset(&reg[0], 0, sizeof(reg));
   // clean OAM
@@ -3194,16 +3271,20 @@ void CPUReset()
   dma2Dest = 0;
   dma3Source = 0;
   dma3Dest = 0;
+#ifndef GSFOPT
   cpuSaveGameFunc = flashSaveDecide;
   renderLine = mode0RenderLine;
+#endif
   fxOn = false;
   windowOn = false;
   frameCount = 0;
   saveType = 0;
   layerEnable = DISPCNT & layerSettings;
 
+#ifndef GSFOPT
   CPUUpdateRenderBuffers(true);
-  
+#endif
+
   for(int i = 0; i < 256; i++) {
     map[i].address = (u8 *)&dummyAddress;
     map[i].mask = 0;
@@ -3231,16 +3312,20 @@ void CPUReset()
   map[10].mask = 0x1FFFFFF;
   map[12].address = rom;
   map[12].mask = 0x1FFFFFF;
+#ifndef GSFOPT
   map[14].address = flashSaveMemory;
   map[14].mask = 0xFFFF;
 
   eepromReset();
   flashReset();
+#endif
   
   soundReset();
 
+#ifndef GSFOPT
   CPUUpdateWindow0();
   CPUUpdateWindow1();
+#endif
 
   // make sure registers are correctly initialized if not using BIOS
   if(!useBios) {
@@ -3253,6 +3338,7 @@ void CPUReset()
       BIOS_RegisterRamReset(0xfe);
   }
 
+#ifndef GSFOPT
   switch(cpuSaveType) {
   case 0: // automatic
     cpuSramEnabled = true;
@@ -3297,6 +3383,7 @@ void CPUReset()
   systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
   
   lastTime = systemGetClock();
+#endif
 }
 
 void CPUInterrupt()
@@ -3365,6 +3452,7 @@ void CPULoop(int ticks)
   }
   
   for(;;) {
+#ifndef GSFOPT
 #ifndef FINAL_VERSION
     if(systemDebug) {
       if(systemDebug >= 10 && !holdState) {
@@ -3389,11 +3477,52 @@ void CPULoop(int ticks)
       }
     }
 #endif
+#endif
 
     if(!holdState) {
       if(armState) {
+#ifdef GSFOPT
+	    if(((armNextPC >> 24) >= 8 ) && ((armNextPC >> 24) <= 13)&&!cpuIsMultiBoot)
+		{
+		if(!optData[(armNextPC)&0x1FFFFFC])
+			optCount+=4;
+		
+		if(optData[armNextPC & 0x1FFFFFC] < number_loops) optData[(armNextPC)&0x1FFFFFC]++; // = true;
+		if(optData[(armNextPC & 0x1FFFFFC)+1] < number_loops) optData[((armNextPC)&0x1FFFFFC)+1]++; // = true;
+		if(optData[(armNextPC & 0x1FFFFFC)+2] < number_loops) optData[((armNextPC)&0x1FFFFFC)+2]++; // = true;
+		if(optData[(armNextPC & 0x1FFFFFC)+3] < number_loops) optData[((armNextPC)&0x1FFFFFC)+3]++; // = true;
+		}
+		else if (((armNextPC>>24)==2)&&cpuIsMultiBoot)
+		{
+		if(!optData[(armNextPC)&0x3FFFC])	
+			optCount+=4;
+		
+		if(optData[(armNextPC & 0x3FFFC)+0] < number_loops) optData[(armNextPC)&0x3FFFC]++; // = true;
+		if(optData[(armNextPC & 0x3FFFC)+1] < number_loops) optData[((armNextPC)&0x3FFFC)+1]++; // = true;
+		if(optData[(armNextPC & 0x3FFFC)+2] < number_loops) optData[((armNextPC)&0x3FFFC)+2]++; // = true;
+		if(optData[(armNextPC & 0x3FFFC)+3] < number_loops) optData[((armNextPC)&0x3FFFC)+3]++; // = true;
+		}
+#endif
 #include "arm-new.h"
       } else {
+#ifdef GSFOPT
+	    if(((armNextPC >> 24) >= 8 ) && ((armNextPC >> 24) <= 13)&&!cpuIsMultiBoot)
+		{
+		if(!optData[(armNextPC)&0x1FFFFFE])
+			optCount+=2;
+		
+		if(optData[armNextPC & 0x1FFFFFE] < number_loops) optData[(armNextPC & 0x1FFFFFE)]++; // = true;
+		if(optData[(armNextPC & 0x1FFFFFE)+1] < number_loops) optData[(armNextPC & 0x1FFFFFE)+1]++; // = true;
+		}
+		else if (((armNextPC>>24)==2)&&cpuIsMultiBoot)
+		{
+		if(!optData[(armNextPC)&0x3FFFE])
+			optCount+=2;
+		
+		if(optData[(armNextPC & 0x3FFFE)+0] < number_loops) optData[(armNextPC)&0x3FFFE]++; // = true;
+		if(optData[(armNextPC & 0x3FFFE)+1] < number_loops) optData[((armNextPC)&0x3FFFE)+1]++; // = true;
+		}
+#endif
 #include "thumb.h"
       }
     } else {
@@ -3461,10 +3590,12 @@ void CPULoop(int ticks)
             CPUCompareVCOUNT();
           }
         } else {
+#ifndef GSFOPT
           int framesToSkip = systemFrameSkip;
           if(speedup)
             framesToSkip = 9; // try 6 FPS during speedup
-          
+#endif
+
           if(DISPSTAT & 2) {
             // if in H-Blank, leave it and move to drawing mode
             VCOUNT++;
@@ -3474,12 +3605,17 @@ void CPULoop(int ticks)
             DISPSTAT &= 0xFFFD;
             if(VCOUNT == 160) {
               count++;
+#ifndef GSFOPT
               systemFrame();
-              
+#endif
+
+#ifndef GSFOPT             
               if((count % 10) == 0) {
                 system10Frames(60);
               }
+#endif
               if(count == 60) {
+#ifndef GSFOPT
                 u32 time = systemGetClock();
                 if(time != lastTime) {
                   u32 t = 100000/(time - lastTime);
@@ -3487,16 +3623,21 @@ void CPULoop(int ticks)
                 } else
                   systemShowSpeed(0);
                 lastTime = time;
+#endif
                 count = 0;
               }
               u32 joy = 0;
               // update joystick information
+#ifndef GSFOPT
               if(systemReadJoypads())
                 // read default joystick
                 joy = systemReadJoypad(-1);
+#endif
               P1 = 0x03FF ^ (joy & 0x3FF);
+#ifndef GSFOPT
               if(cpuEEPROMSensorEnabled)
                 systemUpdateMotionSensor();              
+#endif
               UPDATE_REG(0x130, P1);
               u16 P1CNT = READ16LE(((u16 *)&ioMem[0x132]));
               // this seems wrong, but there are cases where the game
@@ -3519,18 +3660,22 @@ void CPULoop(int ticks)
               
               u32 ext = (joy >> 10);
               int cheatTicks = 0;
+#ifndef GSFOPT
               if(cheatsEnabled)
                 cheatsCheckKeys(P1^0x3FF, ext);
+#endif
               cpuDmaTicksToUpdate += cheatTicks;
               speedup = (ext & 1) ? true : false;
               capture = (ext & 2) ? true : false;
-              
+
+#ifndef GSFOPT              
               if(capture && !capturePrevious) {
                 captureNumber++;
                 systemScreenCapture(captureNumber);
               }
               capturePrevious = capture;
-              
+#endif
+
               DISPSTAT |= 1;
               DISPSTAT &= 0xFFFD;
               UPDATE_REG(0x04, DISPSTAT);
@@ -3539,6 +3684,7 @@ void CPULoop(int ticks)
                 UPDATE_REG(0x202, IF);
               }
               CPUCheckDMA(1, 0x0f);
+#ifndef GSFOPT
               if(frameCount >= framesToSkip) {
                 systemDrawScreen();
                 frameCount = 0;
@@ -3546,12 +3692,14 @@ void CPULoop(int ticks)
                 frameCount++;
               if(systemPauseOnFrame())
                 ticks = 0;
+#endif
             }
             
             UPDATE_REG(0x04, DISPSTAT);
             
             CPUCompareVCOUNT(); 
           } else {
+#ifndef GSFOPT
             if(frameCount >= framesToSkip) {
               (*renderLine)();
               
@@ -3654,6 +3802,7 @@ void CPULoop(int ticks)
                 break;
               }
             }
+#endif
             // entering H-Blank
             DISPSTAT |= 2;
             UPDATE_REG(0x04, DISPSTAT);
@@ -3925,6 +4074,7 @@ struct EmulatedSystem GBASystem = {
   CPUReset,
   // emuCleanUp
   CPUCleanUp,
+#ifndef GSFOPT
   // emuReadBattery
   CPUReadBatteryFile,
   // emuWriteBattery
@@ -3941,10 +4091,13 @@ struct EmulatedSystem GBASystem = {
   CPUWritePNGFile,
   // emuWriteBMP
   CPUWriteBMPFile,
+#endif
   // emuUpdateCPSR
   CPUUpdateCPSR,
+#ifndef GSFOPT
   // emuHasDebugger
   true,
+#endif
   // emuCount
 #ifdef FINAL_VERSION
   250000
@@ -3952,3 +4105,42 @@ struct EmulatedSystem GBASystem = {
   5000
 #endif
 };
+
+#ifdef GSFOPT
+//putting the NULLed system functions here, for simplicity
+void systemMessage(int number, const char *defaultMsg, ...)
+{
+
+}
+
+void systemSoundShutdown()
+{
+
+}
+
+void systemSoundPause()
+{
+
+}
+
+void systemSoundReset()
+{
+
+}
+
+void systemSoundResume()
+{
+
+}
+
+void systemWriteDataToSoundBuffer()			//this one actually outputs the sound, I do believe
+{
+
+}
+
+bool systemCanChangeSoundQuality()
+{
+  return true;
+}
+#endif
+

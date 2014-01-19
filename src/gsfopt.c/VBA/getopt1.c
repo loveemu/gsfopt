@@ -24,7 +24,9 @@
 #include <config.h>
 #endif
 
+#ifndef GSFOPT
 #include "getopt.h"
+#endif
 
 #if !defined __STDC__ || !__STDC__
 /* This is a separate conditional since some stdc systems

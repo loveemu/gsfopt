@@ -64,6 +64,10 @@ extern void soundTimerOverflow(int);
 extern void soundSetQuality(int);
 
 //extern int SOUND_TICKS;
+#ifdef GSFOPT
+extern "C"
+{
+#endif
 extern int SOUND_CLOCK_TICKS;
 extern int soundTicks;
 extern int soundPaused;
@@ -72,11 +76,19 @@ extern int soundQuality;
 extern int soundBufferLen;
 extern int soundBufferTotalLen;
 extern u32 soundNextPosition;
+#ifndef GSFOPT
 extern u16 soundFinalWave[1470];
+#else
+extern u16 soundFinalWave[2304];
+#endif
 extern int soundVolume;
 
 extern bool soundEcho;
 extern bool soundLowPass;
 extern bool soundReverse;
+
+#ifdef GSFOPT
+} // extern "C"
+#endif
 
 #endif // VBA_SOUND_H

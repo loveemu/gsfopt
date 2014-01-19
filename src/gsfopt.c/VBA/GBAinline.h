@@ -22,13 +22,28 @@
 
 #include "System.h"
 #include "Port.h"
+#ifndef GSFOPT
 #include "RTC.h"
+#endif
 
+#ifdef GSFOPT
+#include <stdio.h>
+#endif
+
+#ifndef GSFOPT
 extern bool cpuSramEnabled;
 extern bool cpuFlashEnabled;
 extern bool cpuEEPROMEnabled;
 extern bool cpuEEPROMSensorEnabled;
+#endif
 
+#ifdef GSFOPT
+extern "C" unsigned char optData[0x2000000];
+extern "C" unsigned long optCount;
+extern "C" int number_loops;
+#endif
+
+#ifndef GSFOPT
 #define CPUReadByteQuick(addr) \
   map[(addr)>>24].address[(addr) & map[(addr)>>24].mask]
 
@@ -37,6 +52,70 @@ extern bool cpuEEPROMSensorEnabled;
 
 #define CPUReadMemoryQuick(addr) \
   READ32LE(((u32*)&map[(addr)>>24].address[(addr) & map[(addr)>>24].mask]))
+#else
+inline u8 CPUReadByteQuick(u32 addr) {
+  if (((addr>>24)>=8)&&((addr>>24)<=13)&&!cpuIsMultiBoot) { 
+    if(!optData[addr&0x1FFFFFF])
+		optCount++;
+	
+    if(optData[addr&0x1FFFFFF] < number_loops) optData[addr&0x1FFFFFF]++; // = true; 
+  }
+  else if (((addr>>24)==2)&&cpuIsMultiBoot)
+  {
+	if(!optData[addr&0x3FFFF])
+		optCount++;
+	
+	if(optData[(armNextPC & 0x3FFFF)+0] < number_loops) optData[addr&0x3FFFF]++; // = true;
+  }
+  return  map[(addr)>>24].address[(addr) & map[(addr)>>24].mask]; 
+}
+
+inline u32 CPUReadHalfWordQuick(u32 addr) {
+   
+  if (((addr>>24)>=8)&&((addr>>24)<=13)&&!cpuIsMultiBoot) { 
+    if(!optData[addr&0x1FFFFFE])	
+		optCount+=2;
+	
+    if(optData[addr&0x1FFFFFE] < number_loops) optData[addr&0x1FFFFFE]++; // = true; 
+	if(optData[(addr&0x1FFFFFE)+1] < number_loops) optData[(addr&0x1FFFFFE)+1]++; // = true; 
+  }
+  else if (((addr>>24)==2)&&cpuIsMultiBoot)
+  {
+	if(!optData[addr&0x3FFFE])
+		optCount+=2;
+	
+	if(optData[(armNextPC & 0x3FFFE)+0] < number_loops) optData[addr&0x3FFFE]++; // = true;
+	if(optData[(armNextPC & 0x3FFFE)+1] < number_loops) optData[(addr&0x3FFFE)+1]++; // = true;
+  }
+
+  return READ16LE(((u16*)&map[(addr)>>24].address[(addr) & map[(addr)>>24].mask]));
+}
+  
+
+inline u32 CPUReadMemoryQuick(u32 addr) {
+  
+  if (((addr>>24)>=8)&&((addr>>24)<=13)&&!cpuIsMultiBoot) { 
+    if(!optData[addr&0x1FFFFFC])
+		optCount+=4;
+	
+    if(optData[addr&0x1FFFFFC] < number_loops) optData[addr&0x1FFFFFC]++; // = true; 
+	if(optData[(addr&0x1FFFFFC)+1] < number_loops) optData[(addr&0x1FFFFFC)+1]++; // = true; 
+	if(optData[(addr&0x1FFFFFC)+2] < number_loops) optData[(addr&0x1FFFFFC)+2]++; // = true; 
+	if(optData[(addr&0x1FFFFFC)+3] < number_loops) optData[(addr&0x1FFFFFC)+3]++; // = true; 
+  }
+  else if (((addr>>24)==2)&&cpuIsMultiBoot)
+  {
+	if(!optData[addr&0x3FFFC])
+		optCount+=4;
+	
+	if(optData[(armNextPC & 0x3FFFC)+0] < number_loops) optData[addr&0x3FFFC]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+1] < number_loops) optData[(addr&0x3FFFC)+1]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+2] < number_loops) optData[(addr&0x3FFFC)+2]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+3] < number_loops) optData[(addr&0x3FFFC)+3]++; // = true;
+  }
+  return READ32LE(((u32*)&map[(addr)>>24].address[(addr) & map[(addr)>>24].mask])); 
+}
+#endif
 
 inline u32 CPUReadMemory(u32 address)
 {
@@ -70,6 +149,17 @@ inline u32 CPUReadMemory(u32 address)
     break;
   case 2:
     value = READ32LE(((u32 *)&workRAM[address & 0x3FFFC]));
+#ifdef GSFOPT
+	if(cpuIsMultiBoot) {
+	if(!optData[address&0x3FFFC])	
+		optCount+=4;
+	
+	if(optData[(armNextPC & 0x3FFFC)+0] < number_loops) optData[address&0x3FFFC]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+1] < number_loops) optData[(address&0x3FFFC)+1]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+2] < number_loops) optData[(address&0x3FFFC)+2]++; // = true;
+	if(optData[(armNextPC & 0x3FFFC)+3] < number_loops) optData[(address&0x3FFFC)+3]++; // = true;
+	}
+#endif
     break;
   case 3:
     value = READ32LE(((u32 *)&internalRAM[address & 0x7ffC]));
@@ -97,16 +187,31 @@ inline u32 CPUReadMemory(u32 address)
   case 11:
   case 12:
     value = READ32LE(((u32 *)&rom[address&0x1FFFFFC]));
+#ifdef GSFOPT
+	if(!cpuIsMultiBoot) {
+	if(!optData[address&0x1FFFFFC])	
+		optCount+=4;
+	
+	if(optData[(address & 0x1FFFFFC)] < number_loops) optData[address&0x1FFFFFC]++; // = true;
+	if(optData[(address & 0x1FFFFFC)+1] < number_loops) optData[(address&0x1FFFFFC)+1]++; // = true;
+	if(optData[(address & 0x1FFFFFC)+2] < number_loops) optData[(address&0x1FFFFFC)+2]++; // = true;
+	if(optData[(address & 0x1FFFFFC)+3] < number_loops) optData[(address&0x1FFFFFC)+3]++; // = true;
+	}
+#endif
     break;    
   case 13:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled)
       // no need to swap this
       return eepromRead(address);
+#endif
     goto unreadable;
   case 14:
+#ifndef GSFOPT
     if(cpuFlashEnabled | cpuSramEnabled)
       // no need to swap this
       return flashRead(address);
+#endif
     // default
   default:
   unreadable:
@@ -186,6 +291,15 @@ inline u32 CPUReadHalfWord(u32 address)
     break;
   case 2:
     value = READ16LE(((u16 *)&workRAM[address & 0x3FFFE]));
+#ifdef GSFOPT
+	if(cpuIsMultiBoot) {
+	  if(!optData[(address & 0x3FFFE)])
+		  optCount+=2;
+	  
+	  if(optData[(armNextPC & 0x3FFFE)+0] < number_loops) optData[(address & 0x3FFFE)]++; // = true;
+	  if(optData[(armNextPC & 0x3FFFE)+1] < number_loops) optData[(address & 0x3FFFE)+1]++; // = true;
+	  }
+#endif
     break;
   case 3:
     value = READ16LE(((u16 *)&internalRAM[address & 0x7ffe]));
@@ -209,20 +323,35 @@ inline u32 CPUReadHalfWord(u32 address)
   case 10:
   case 11:
   case 12:
+#ifndef GSFOPT
     if(address == 0x80000c4 || address == 0x80000c6 || address == 0x80000c8)
       value = rtcRead(address);
     else
+#endif
       value = READ16LE(((u16 *)&rom[address & 0x1FFFFFE]));
+#ifdef GSFOPT
+	  if(!cpuIsMultiBoot) {
+	  if(!optData[(address & 0x1FFFFFE)])	
+		  optCount+=2;
+	  
+	  if(optData[address & 0x1FFFFFE] < number_loops) optData[(address & 0x1FFFFFE)]++; // = true;
+	  if(optData[(address & 0x1FFFFFE)+1] < number_loops) optData[(address & 0x1FFFFFE)+1]++; // = true;
+	  }	  
+#endif
     break;    
   case 13:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled)
       // no need to swap this
       return  eepromRead(address);
+#endif
     goto unreadable;
   case 14:
+#ifndef GSFOPT
     if(cpuFlashEnabled | cpuSramEnabled)
       // no need to swap this
       return flashRead(address);
+#endif
     // default
   default:
   unreadable:
@@ -283,6 +412,14 @@ inline u8 CPUReadByte(u32 address)
     }
     return bios[address & 0x3FFF];
   case 2:
+#ifdef GSFOPT
+    if(cpuIsMultiBoot) {
+	  if(!optData[address & 0x3FFFF])	
+		  optCount++;
+	  
+	  if(optData[(armNextPC & 0x3FFFF)+0] < number_loops) optData[address & 0x3FFFF]++; // = true;
+	  }
+#endif
     return workRAM[address & 0x3FFFF];
   case 3:
     return internalRAM[address & 0x7fff];
@@ -301,12 +438,26 @@ inline u8 CPUReadByte(u32 address)
   case 10:
   case 11:
   case 12:
+#ifdef GSFOPT
+	  if(!cpuIsMultiBoot) {
+	  if(!optData[address & 0x1FFFFFF])	
+		  optCount++;
+	  
+	  /*=========== LOOP Detection Code ============*/
+	  /* There is more than one instance like this in this file. I am only listing one. */
+	  if(optData[address & 0x1FFFFFF] < number_loops) optData[address & 0x1FFFFFF]++; // = true;
+	  /*=========== End of LOOP Detection Code ============*/
+	  }
+#endif
     return rom[address & 0x1FFFFFF];        
   case 13:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled)
       return eepromRead(address);
+#endif
     goto unreadable;
   case 14:
+#ifndef GSFOPT
     if(cpuSramEnabled | cpuFlashEnabled)
       return flashRead(address);
     if(cpuEEPROMSensorEnabled) {
@@ -321,6 +472,7 @@ inline u8 CPUReadByte(u32 address)
         return systemGetSensorY() >> 8;
       }
     }
+#endif
     // default
   default:
   unreadable:
@@ -392,16 +544,20 @@ inline void CPUWriteMemory(u32 address, u32 value)
     WRITE32LE(((u32 *)&oam[address & 0x3fc]), value);
     break;
   case 0x0D:
+#ifndef GSFOPT
     if(cpuEEPROMEnabled) {
       eepromWrite(address, value);
       break;
     }
+#endif
     goto unwritable;
   case 0x0E:
+#ifndef GSFOPT
     if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
       (*cpuSaveGameFunc)(address, (u8)value);
       break;
     }
+#endif
     // default
   default:
   unwritable:
