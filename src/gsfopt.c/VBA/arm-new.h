@@ -2179,8 +2179,6 @@
     }\
     break;
 
- //printf("\nCalling CPUReadMemoryQuick line 2182.   armNextPC %X", armNextPC);			//HIT BABY
-
   u32 opcode = CPUReadMemoryQuick(armNextPC);
 
   clockTicks = memoryWaitFetch32[(armNextPC >> 24) & 15];

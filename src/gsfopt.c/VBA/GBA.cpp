@@ -25,22 +25,22 @@
 #include "GBA.h"
 #include "GBAinline.h"
 #include "Globals.h"
-//#include "Gfx.h"
-//#include "EEprom.h"
-//#include "Flash.h"
+#include "Gfx.h"
+#include "EEprom.h"
+#include "Flash.h"
 #include "Sound.h"
-//#include "Sram.h"
+#include "Sram.h"
 #include "bios.h"
 #include "unzip.h"
-//#include "Cheats.h"
+#include "Cheats.h"
 #include "NLS.h"
-//#include "elf.h"
+#include "elf.h"
 #include "Util.h"
 #include "Port.h"
-//#include "agbprint.h"
-//#ifdef PROFILING
-//#include "prof/prof.h"
-//#endif
+#include "agbprint.h"
+#ifdef PROFILING
+#include "prof/prof.h"
+#endif
 
 #define UPDATE_REG(address, value) WRITE16LE(((u16 *)&ioMem[address]),value)
 
@@ -57,7 +57,7 @@
   *extCpuLoopTicks = *extClockTicks;\
   *extTicks = *extClockTicks;
 
-extern "C" int emulating;
+extern int emulating;
 
 int cpuDmaTicksToUpdate = 0;
 int cpuDmaCount = 0;
@@ -74,10 +74,10 @@ bool intState = false;
 bool stopState = false;
 bool holdState = false;
 int holdType = 0;
-//bool cpuSramEnabled = true;
-//bool cpuFlashEnabled = true;
-//bool cpuEEPROMEnabled = true;
-//bool cpuEEPROMSensorEnabled = false;
+bool cpuSramEnabled = true;
+bool cpuFlashEnabled = true;
+bool cpuEEPROMEnabled = true;
+bool cpuEEPROMSensorEnabled = false;
 
 #ifdef PROFILING
 int profilingTicks = 0;
@@ -114,8 +114,8 @@ u32 dma2Source = 0;
 u32 dma2Dest = 0;
 u32 dma3Source = 0;
 u32 dma3Dest = 0;
-//void (*cpuSaveGameFunc)(u32,u8) = flashSaveDecide;
-//void (*renderLine)() = mode0RenderLine;
+void (*cpuSaveGameFunc)(u32,u8) = flashSaveDecide;
+void (*renderLine)() = mode0RenderLine;
 bool fxOn = false;
 bool windowOn = false;
 int frameCount = 0;
@@ -368,7 +368,7 @@ u32 myROM[] = {
 0x03007FE0
 };
 
-/*variable_desc saveGameStruct[] = {
+variable_desc saveGameStruct[] = {
   { &DISPCNT  , sizeof(u16) },
   { &DISPSTAT , sizeof(u16) },
   { &VCOUNT   , sizeof(u16) },
@@ -485,9 +485,9 @@ u32 myROM[] = {
   { &armMode , sizeof(int) },
   { &saveType , sizeof(int) },
   { NULL, 0 } 
-};*/
+};
 
-int cpuLoopTicks = 0;
+//int cpuLoopTicks = 0;
 int cpuSavedTicks = 0;
 
 #ifdef PROFILING
@@ -558,10 +558,42 @@ inline int CPUUpdateTicks()
   return cpuLoopTicks;
 }
 
-//extern u32 line0[240];
-//extern u32 line1[240];
-//extern u32 line2[240];
-//extern u32 line3[240];
+void CPUUpdateWindow0()
+{
+  int x00 = WIN0H>>8;
+  int x01 = WIN0H & 255;
+
+  if(x00 <= x01) {
+    for(int i = 0; i < 240; i++) {
+      gfxInWin0[i] = (i >= x00 && i < x01);
+    }
+  } else {
+    for(int i = 0; i < 240; i++) {
+      gfxInWin0[i] = (i >= x00 || i < x01);
+    }
+  }
+}
+
+void CPUUpdateWindow1()
+{
+  int x00 = WIN1H>>8;
+  int x01 = WIN1H & 255;
+
+  if(x00 <= x01) {
+    for(int i = 0; i < 240; i++) {
+      gfxInWin1[i] = (i >= x00 && i < x01);
+    }
+  } else {
+    for(int i = 0; i < 240; i++) {
+      gfxInWin1[i] = (i >= x00 || i < x01);
+    }
+  }
+}
+
+extern u32 line0[240];
+extern u32 line1[240];
+extern u32 line2[240];
+extern u32 line3[240];
 
 #define CLEAR_ARRAY(a) \
   {\
@@ -571,10 +603,98 @@ inline int CPUUpdateTicks()
     }\
   }\
 
-
-/*static bool CPUReadState(gzFile gzFile)
+void CPUUpdateRenderBuffers(bool force)
 {
-  /*int version = utilReadInt(gzFile);
+  if(!(layerEnable & 0x0100) || force) {
+    CLEAR_ARRAY(line0);
+  }
+  if(!(layerEnable & 0x0200) || force) {
+    CLEAR_ARRAY(line1);
+  }
+  if(!(layerEnable & 0x0400) || force) {
+    CLEAR_ARRAY(line2);
+  }
+  if(!(layerEnable & 0x0800) || force) {
+    CLEAR_ARRAY(line3);
+  }
+}
+
+static bool CPUWriteState(gzFile gzFile)
+{
+  utilWriteInt(gzFile, SAVE_GAME_VERSION);
+
+  utilGzWrite(gzFile, &rom[0xa0], 16);
+
+  utilWriteInt(gzFile, useBios);
+  
+  utilGzWrite(gzFile, &reg[0], sizeof(reg));
+
+  utilWriteData(gzFile, saveGameStruct);
+
+  // new to version 0.7.1
+  utilWriteInt(gzFile, stopState);
+  // new to version 0.8
+  utilWriteInt(gzFile, intState);
+
+  utilGzWrite(gzFile, internalRAM, 0x8000);
+  utilGzWrite(gzFile, paletteRAM, 0x400);
+  utilGzWrite(gzFile, workRAM, 0x40000);
+  utilGzWrite(gzFile, vram, 0x20000);
+  utilGzWrite(gzFile, oam, 0x400);
+  utilGzWrite(gzFile, pix, 4*241*162);
+  utilGzWrite(gzFile, ioMem, 0x400);
+
+  eepromSaveGame(gzFile);
+  flashSaveGame(gzFile);
+  soundSaveGame(gzFile);
+
+  cheatsSaveGame(gzFile);
+
+  // version 1.5
+  rtcSaveGame(gzFile);
+  
+  return true;
+}
+
+bool CPUWriteState(const char *file)
+{
+  gzFile gzFile = utilGzOpen(file, "wb");
+
+  if(gzFile == NULL) {
+    systemMessage(MSG_ERROR_CREATING_FILE, N_("Error creating file %s"), file);
+    return false;
+  }
+  
+  bool res = CPUWriteState(gzFile);
+
+  utilGzClose(gzFile);
+  
+  return res;
+}
+
+bool CPUWriteMemState(char *memory, int available)
+{
+  gzFile gzFile = utilMemGzOpen(memory, available, "w");
+
+  if(gzFile == NULL) {
+    return false;
+  }
+
+  bool res = CPUWriteState(gzFile);
+
+  long pos = utilGzMemTell(gzFile)+8;
+
+  if(pos >= (available))
+    res = false;
+
+  utilGzClose(gzFile);
+
+  return res;
+}
+
+static bool CPUReadState(gzFile gzFile)
+{
+  int version = utilReadInt(gzFile);
 
   if(version > SAVE_GAME_VERSION || version < SAVE_GAME_VERSION_1) {
     systemMessage(MSG_UNSUPPORTED_VBA_SGM,
@@ -634,12 +754,12 @@ inline int CPUUpdateTicks()
   utilGzRead(gzFile, ioMem, 0x400);
 
   eepromReadGame(gzFile, version);
-  //flashReadGame(gzFile, version);
+  flashReadGame(gzFile, version);
   soundReadGame(gzFile, version);
   
-//  if(version > SAVE_GAME_VERSION_1) {
-//    cheatsReadGame(gzFile);
-//  }
+  if(version > SAVE_GAME_VERSION_1) {
+    cheatsReadGame(gzFile);
+  }
   if(version > SAVE_GAME_VERSION_6) {
     rtcReadGame(gzFile);
   }
@@ -665,21 +785,21 @@ inline int CPUUpdateTicks()
   // set pointers!
   layerEnable = layerSettings & DISPCNT;
   
-//  CPUUpdateRender();
-//  CPUUpdateRenderBuffers(true);
-//  CPUUpdateWindow0();
-//  CPUUpdateWindow1();
+  CPUUpdateRender();
+  CPUUpdateRenderBuffers(true);
+  CPUUpdateWindow0();
+  CPUUpdateWindow1();
   gbaSaveType = 0;
   switch(saveType) {
   case 0:
-    //cpuSaveGameFunc = flashSaveDecide;
+    cpuSaveGameFunc = flashSaveDecide;
     break;
   case 1:
-//    cpuSaveGameFunc = sramWrite;
+    cpuSaveGameFunc = sramWrite;
     gbaSaveType = 1;
     break;
   case 2:
-//    cpuSaveGameFunc = flashWrite;
+    cpuSaveGameFunc = flashWrite;
     gbaSaveType = 2;
     break;
   default:
@@ -687,15 +807,15 @@ inline int CPUUpdateTicks()
                   N_("Unsupported save type %d"), saveType);
     break;
   }
-  //if(eepromInUse)
-  //  gbaSaveType = 3;
+  if(eepromInUse)
+    gbaSaveType = 3;
 
   systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
   
   return true;  
-}*/
+}
 
-/*bool CPUReadMemState(char *memory, int available)
+bool CPUReadMemState(char *memory, int available)
 {
   gzFile gzFile = utilMemGzOpen(memory, available, "r");
 
@@ -704,10 +824,9 @@ inline int CPUUpdateTicks()
   utilGzClose(gzFile);
 
   return res;
-	return true;
-}*/
+}
 
-/*bool CPUReadState(const char * file)
+bool CPUReadState(const char * file)
 {
   gzFile gzFile = utilGzOpen(file, "rb");
 
@@ -719,10 +838,82 @@ inline int CPUUpdateTicks()
   utilGzClose(gzFile);
 
   return res;
-	return true;
-}*/
+}
 
-/*bool CPUReadGSASnapshot(const char *fileName)
+bool CPUExportEepromFile(const char *fileName)
+{
+  if(eepromInUse) {
+    FILE *file = fopen(fileName, "wb");
+    
+    if(!file) {
+      systemMessage(MSG_ERROR_CREATING_FILE, N_("Error creating file %s"),
+                    fileName);
+      return false;
+    }
+
+    for(int i = 0; i < eepromSize;) {
+      for(int j = 0; j < 8; j++) {
+        if(fwrite(&eepromData[i+7-j], 1, 1, file) != 1) {
+          fclose(file);
+          return false;
+        }
+      }
+      i += 8;
+    }
+    fclose(file);
+  }
+  return true;
+}
+
+bool CPUWriteBatteryFile(const char *fileName)
+{
+  if(gbaSaveType == 0) {
+    if(eepromInUse)
+      gbaSaveType = 3;
+    else switch(saveType) {
+    case 1:
+      gbaSaveType = 1;
+      break;
+    case 2:
+      gbaSaveType = 2;
+      break;
+    }
+  }
+  
+  if(gbaSaveType) {
+    FILE *file = fopen(fileName, "wb");
+    
+    if(!file) {
+      systemMessage(MSG_ERROR_CREATING_FILE, N_("Error creating file %s"),
+                    fileName);
+      return false;
+    }
+    
+    // only save if Flash/Sram in use or EEprom in use
+    if(gbaSaveType != 3) {
+      if(gbaSaveType == 2) {
+        if(fwrite(flashSaveMemory, 1, flashSize, file) != (size_t)flashSize) {
+          fclose(file);
+          return false;
+        }
+      } else {
+        if(fwrite(flashSaveMemory, 1, 0x10000, file) != 0x10000) {
+          fclose(file);
+          return false;
+        }
+      }
+    } else {
+      if(fwrite(eepromData, 1, eepromSize, file) != (size_t)eepromSize) {
+        fclose(file);
+        return false;
+      }
+    }
+    fclose(file);
+  }
+  return true;
+}
+
+bool CPUReadGSASnapshot(const char *fileName)
 {
   int i;
   FILE *file = fopen(fileName, "rb");
@@ -771,10 +962,10 @@ inline int CPUUpdateTicks()
   }
   fseek(file, 12, SEEK_CUR); // skip some flags
   if(saveSize >= 65536) {
- //   if(fread(flashSaveMemory, 1, saveSize, file) != (size_t)saveSize) {
- //     fclose(file);
- //     return false;
- //   }
+    if(fread(flashSaveMemory, 1, saveSize, file) != (size_t)saveSize) {
+      fclose(file);
+      return false;
+    }
   } else {
     systemMessage(MSG_UNSUPPORTED_SNAPSHOT_FILE,
                   N_("Unsupported snapshot file %s"),
@@ -787,7 +978,65 @@ inline int CPUUpdateTicks()
   return true;
 }
 
-/*
+bool CPUWriteGSASnapshot(const char *fileName, 
+                         const char *title, 
+                         const char *desc, 
+                         const char *notes)
+{
+  FILE *file = fopen(fileName, "wb");
+    
+  if(!file) {
+    systemMessage(MSG_CANNOT_OPEN_FILE, N_("Cannot open file %s"), fileName);
+    return false;
+  }
+
+  u8 buffer[17];
+
+  utilPutDword(buffer, 0x0d); // SharkPortSave length
+  fwrite(buffer, 1, 4, file);
+  fwrite("SharkPortSave", 1, 0x0d, file);
+  utilPutDword(buffer, 0x000f0000);
+  fwrite(buffer, 1, 4, file); // save type 0x000f0000 = GBA save
+  utilPutDword(buffer, strlen(title));
+  fwrite(buffer, 1, 4, file); // title length
+  fwrite(title, 1, strlen(title), file);
+  utilPutDword(buffer, strlen(desc));
+  fwrite(buffer, 1, 4, file); // desc length
+  fwrite(desc, 1, strlen(desc), file);
+  utilPutDword(buffer, strlen(notes));
+  fwrite(buffer, 1, 4, file); // notes length
+  fwrite(notes, 1, strlen(notes), file);
+  int saveSize = 0x10000;
+  if(gbaSaveType == 2)
+    saveSize = flashSize;
+  int totalSize = saveSize + 0x1c;
+
+  utilPutDword(buffer, totalSize); // length of remainder of save - CRC
+  fwrite(buffer, 1, 4, file);
+
+  char temp[0x2001c];
+  memset(temp, 0, 28);
+  memcpy(temp, &rom[0xa0], 16); // copy internal name
+  temp[0x10] = rom[0xbe]; // reserved area (old checksum)
+  temp[0x11] = rom[0xbf]; // reserved area (old checksum)
+  temp[0x12] = rom[0xbd]; // complement check
+  temp[0x13] = rom[0xb0]; // maker
+  temp[0x14] = 1; // 1 save ?
+  memcpy(&temp[0x1c], flashSaveMemory, saveSize); // copy save
+  fwrite(temp, 1, totalSize, file); // write save + header
+  u32 crc = 0;
+  
+  for(int i = 0; i < totalSize; i++) {
+    crc += ((u32)temp[i] << (crc % 0x18));
+  }
+  
+  utilPutDword(buffer, crc);
+  fwrite(buffer, 1, 4, file); // CRC?
+  
+  fclose(file);
+  return true;
+}
+
 bool CPUImportEepromFile(const char *fileName)
 {
   FILE *file = fopen(fileName, "rb");
@@ -828,11 +1077,11 @@ bool CPUImportEepromFile(const char *fileName)
     return false;
   fclose(file);
   return true;
-}*/
+}
 
-/*bool CPUReadBatteryFile(const char *fileName)
+bool CPUReadBatteryFile(const char *fileName)
 {
-  /*FILE *file = fopen(fileName, "rb");
+  FILE *file = fopen(fileName, "rb");
     
   if(!file)
     return false;
@@ -866,9 +1115,19 @@ bool CPUImportEepromFile(const char *fileName)
   }
   fclose(file);
   return true;
-}*/
+}
 
-/*bool CPUIsZipFile(const char * file)
+bool CPUWritePNGFile(const char *fileName)
+{
+  return utilWritePNGFile(fileName, 240, 160, pix);
+}
+
+bool CPUWriteBMPFile(const char *fileName)
+{
+  return utilWriteBMPFile(fileName, 240, 160, pix);
+}
+
+bool CPUIsZipFile(const char * file)
 {
   if(strlen(file) > 4) {
     char * p = strrchr(file,'.');
@@ -938,7 +1197,7 @@ bool CPUIsELF(const char *file)
     }
   }
   return false;
-}*/
+}
 
 void CPUCleanUp()
 {
@@ -993,9 +1252,9 @@ void CPUCleanUp()
     ioMem = NULL;
   }
   
-  //elfCleanUp();
+  elfCleanUp();
 
-  //systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+  systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
 
   emulating = 0;
 }
@@ -1008,7 +1267,7 @@ int CPULoadRom(const char *szFile)
     CPUCleanUp();
   }
 
-  //systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+  systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
   
   rom = (u8 *)malloc(0x2000000);
   if(rom == NULL) {
@@ -1027,7 +1286,7 @@ int CPULoadRom(const char *szFile)
   if(cpuIsMultiBoot)
     whereToLoad = workRAM;
 
-/*  if(CPUIsELF(szFile)) {
+  if(CPUIsELF(szFile)) {
     FILE *f = fopen(szFile, "rb");
     if(!f) {
       systemMessage(MSG_ERROR_OPENING_IMAGE, N_("Error opening image %s"),
@@ -1047,8 +1306,7 @@ int CPULoadRom(const char *szFile)
       elfCleanUp();
       return 0;
     }
-  } else*/
-  if(!utilLoad(szFile,
+  } else if(!utilLoad(szFile,
                       utilIsGBAImage,
                       whereToLoad,
                       size)) {
@@ -1116,12 +1374,12 @@ int CPULoadRom(const char *szFile)
     return 0;
   }      
 
-//  CPUUpdateRenderBuffers(true);
+  CPUUpdateRenderBuffers(true);
 
   return size;
 }
 
-/*void CPUUpdateRender()
+void CPUUpdateRender()
 {
   switch(DISPCNT & 7) {
   case 0:
@@ -1181,7 +1439,7 @@ int CPULoadRom(const char *szFile)
     break;
   }
 }
-*/
+
 void CPUUpdateCPSR()
 {
   u32 CPSR = reg[16].I & 0x40;
@@ -1413,10 +1671,10 @@ void CPUSoftwareInterrupt(int comment)
     return;
   }
 #endif
-  //if(comment == 0xfa) {
-  //  agbPrintFlush();
-  //  return;
-  //}
+  if(comment == 0xfa) {
+    agbPrintFlush();
+    return;
+  }
 #ifdef SDL
   if(comment == 0xf9) {
     emulating = 0;
@@ -1467,9 +1725,9 @@ void CPUSoftwareInterrupt(int comment)
           VCOUNT);      
     }
 #endif    
-    //holdState = true;
-    //holdType = -1;
-    //stopState = true;
+    holdState = true;
+    holdType = -1;
+    stopState = true;
     break;
   case 0x04:
 #ifdef DEV_VERSION
@@ -1944,10 +2202,10 @@ void CPUUpdateRegister(u32 address, u16 value)
         }
         //        (*renderLine)();
       }
-//      CPUUpdateRender();
+      CPUUpdateRender();
       // we only care about changes in BG0-BG3
-//      if(changeBG)
-//        CPUUpdateRenderBuffers(false);
+      if(changeBG)
+        CPUUpdateRenderBuffers(false);
       //      CPUUpdateTicks();
     }
     break;
@@ -2023,24 +2281,24 @@ void CPUUpdateRegister(u32 address, u16 value)
     UPDATE_REG(0x26, BG2PD);
     break;
   case 0x28:
-    //BG2X_L = value;
-    //UPDATE_REG(0x28, BG2X_L);
-    //gfxBG2Changed |= 1;
+    BG2X_L = value;
+    UPDATE_REG(0x28, BG2X_L);
+    gfxBG2Changed |= 1;
     break;
   case 0x2A:
-    //BG2X_H = (value & 0xFFF);
-    //UPDATE_REG(0x2A, BG2X_H);
-    //gfxBG2Changed |= 1;    
+    BG2X_H = (value & 0xFFF);
+    UPDATE_REG(0x2A, BG2X_H);
+    gfxBG2Changed |= 1;    
     break;
   case 0x2C:
-    //BG2Y_L = value;
-    //UPDATE_REG(0x2C, BG2Y_L);
-    //gfxBG2Changed |= 2;    
+    BG2Y_L = value;
+    UPDATE_REG(0x2C, BG2Y_L);
+    gfxBG2Changed |= 2;    
     break;
   case 0x2E:
-    //BG2Y_H = value & 0xFFF;
-    //UPDATE_REG(0x2E, BG2Y_H);
-    //gfxBG2Changed |= 2;    
+    BG2Y_H = value & 0xFFF;
+    UPDATE_REG(0x2E, BG2Y_H);
+    gfxBG2Changed |= 2;    
     break;
   case 0x30:
     BG3PA = value;
@@ -2059,34 +2317,34 @@ void CPUUpdateRegister(u32 address, u16 value)
     UPDATE_REG(0x36, BG3PD);
     break;
   case 0x38:
-    //BG3X_L = value;
-    //UPDATE_REG(0x38, BG3X_L);
-//    gfxBG3Changed |= 1;
+    BG3X_L = value;
+    UPDATE_REG(0x38, BG3X_L);
+    gfxBG3Changed |= 1;
     break;
   case 0x3A:
-    //BG3X_H = value & 0xFFF;
-    //UPDATE_REG(0x3A, BG3X_H);
-//    gfxBG3Changed |= 1;    
+    BG3X_H = value & 0xFFF;
+    UPDATE_REG(0x3A, BG3X_H);
+    gfxBG3Changed |= 1;    
     break;
   case 0x3C:
-    //BG3Y_L = value;
-    //UPDATE_REG(0x3C, BG3Y_L);
-//    gfxBG3Changed |= 2;    
+    BG3Y_L = value;
+    UPDATE_REG(0x3C, BG3Y_L);
+    gfxBG3Changed |= 2;    
     break;
   case 0x3E:
-    //BG3Y_H = value & 0xFFF;
-    //UPDATE_REG(0x3E, BG3Y_H);
-//    gfxBG3Changed |= 2;    
+    BG3Y_H = value & 0xFFF;
+    UPDATE_REG(0x3E, BG3Y_H);
+    gfxBG3Changed |= 2;    
     break;
   case 0x40:
-    //WIN0H = value;
-    //UPDATE_REG(0x40, WIN0H);
-//    CPUUpdateWindow0();
+    WIN0H = value;
+    UPDATE_REG(0x40, WIN0H);
+    CPUUpdateWindow0();
     break;
   case 0x42:
-    //WIN1H = value;
-    //UPDATE_REG(0x42, WIN1H);
-//    CPUUpdateWindow1();    
+    WIN1H = value;
+    UPDATE_REG(0x42, WIN1H);
+    CPUUpdateWindow1();    
     break;      
   case 0x44:
     WIN0V = value;
@@ -2112,7 +2370,7 @@ void CPUUpdateRegister(u32 address, u16 value)
     BLDMOD = value & 0x3FFF;
     UPDATE_REG(0x50, BLDMOD);
     fxOn = ((BLDMOD>>6)&3) != 0;
-    //CPUUpdateRender();
+    CPUUpdateRender();
     break;
   case 0x52:
     COLEV = value & 0x1F1F;
@@ -2504,23 +2762,23 @@ void CPUWriteHalfWord(u32 address, u16 value)
     break;
   case 8:
   case 9:
-    //if(address == 0x80000c4 || address == 0x80000c6 || address == 0x80000c8) {
-      //if(!rtcWrite(address, value))
-      //  goto unwritable;
-    //} //else if(!agbPrintWrite(address, value)) goto unwritable;
+    if(address == 0x80000c4 || address == 0x80000c6 || address == 0x80000c8) {
+      if(!rtcWrite(address, value))
+        goto unwritable;
+    } else if(!agbPrintWrite(address, value)) goto unwritable;
     break;
   case 13:
-    //if(cpuEEPROMEnabled) {
-    //  eepromWrite(address, (u8)value);
-    //  break;
-    //}
+    if(cpuEEPROMEnabled) {
+      eepromWrite(address, (u8)value);
+      break;
+    }
     goto unwritable;
-  //case 14:
-  //  if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
-  //    (*cpuSaveGameFunc)(address, (u8)value);
-  //    break;
-  //  }
-  //  goto unwritable;
+  case 14:
+    if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
+      (*cpuSaveGameFunc)(address, (u8)value);
+      break;
+    }
+    goto unwritable;
   default:
   unwritable:
 #ifdef DEV_VERSION
@@ -2634,16 +2892,16 @@ void CPUWriteByte(u32 address, u8 b)
     *((u16 *)&oam[address & 0x3FE]) = (b << 8) | b;
     break;    
   case 13:
-   // if(cpuEEPROMEnabled) {
-   //   eepromWrite(address, b);
-   //   break;
-   // }
+    if(cpuEEPROMEnabled) {
+      eepromWrite(address, b);
+      break;
+    }
     goto unwritable;
-  //case 14:
-  //  if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
-  //    (*cpuSaveGameFunc)(address, b);
-  //    break;
-  //  }
+  case 14:
+    if(!eepromInUse | cpuSramEnabled | cpuFlashEnabled) {
+      (*cpuSaveGameFunc)(address, b);
+      break;
+    }
     // default
   default:
   unwritable:
@@ -2672,23 +2930,23 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
     cpuBiosSwapped = true;
   }
 #endif
-  //gbaSaveType = 0;
-  //eepromInUse = 0;
-  //saveType = 0;
+  gbaSaveType = 0;
+  eepromInUse = 0;
+  saveType = 0;
   useBios = false;
   
-  //if(useBiosFile) {
-  //  int size = 0x4000;
-  //  if(utilLoad(biosFileName,
-  //              CPUIsGBABios,
-  //              bios,
-  //              size)) {
-  //    if(size == 0x4000)
-  //      useBios = true;
-  //    else
-  //      systemMessage(MSG_INVALID_BIOS_FILE_SIZE, N_("Invalid BIOS file size"));
-  //  }
-  //}
+  if(useBiosFile) {
+    int size = 0x4000;
+    if(utilLoad(biosFileName,
+                CPUIsGBABios,
+                bios,
+                size)) {
+      if(size == 0x4000)
+        useBios = true;
+      else
+        systemMessage(MSG_INVALID_BIOS_FILE_SIZE, N_("Invalid BIOS file size"));
+    }
+  }
   
   if(!useBios) {
     memcpy(bios, myROM, sizeof(myROM));
@@ -2756,7 +3014,7 @@ void CPUInit(const char *biosFileName, bool useBiosFile)
 
 void CPUReset()
 {
-/*  if(gbaSaveType == 0) {
+  if(gbaSaveType == 0) {
     if(eepromInUse)
       gbaSaveType = 3;
     else
@@ -2769,9 +3027,7 @@ void CPUReset()
         break;
       }
   }
-
-  */
-  //rtcReset();
+  rtcReset();
   // clen registers
   memset(&reg[0], 0, sizeof(reg));
   // clean OAM
@@ -2938,15 +3194,15 @@ void CPUReset()
   dma2Dest = 0;
   dma3Source = 0;
   dma3Dest = 0;
-//  cpuSaveGameFunc = flashSaveDecide;
-//  renderLine = mode0RenderLine;
+  cpuSaveGameFunc = flashSaveDecide;
+  renderLine = mode0RenderLine;
   fxOn = false;
   windowOn = false;
   frameCount = 0;
   saveType = 0;
   layerEnable = DISPCNT & layerSettings;
 
-//  CPUUpdateRenderBuffers(true);
+  CPUUpdateRenderBuffers(true);
   
   for(int i = 0; i < 256; i++) {
     map[i].address = (u8 *)&dummyAddress;
@@ -2975,16 +3231,16 @@ void CPUReset()
   map[10].mask = 0x1FFFFFF;
   map[12].address = rom;
   map[12].mask = 0x1FFFFFF;
-  //map[14].address = flashSaveMemory;
-  //map[14].mask = 0xFFFF;
+  map[14].address = flashSaveMemory;
+  map[14].mask = 0xFFFF;
 
-  //eepromReset();
-  //flashReset();
+  eepromReset();
+  flashReset();
   
   soundReset();
 
-//  CPUUpdateWindow0();
-//  CPUUpdateWindow1();
+  CPUUpdateWindow0();
+  CPUUpdateWindow1();
 
   // make sure registers are correctly initialized if not using BIOS
   if(!useBios) {
@@ -2997,7 +3253,7 @@ void CPUReset()
       BIOS_RegisterRamReset(0xfe);
   }
 
-  /*switch(cpuSaveType) {
+  switch(cpuSaveType) {
   case 0: // automatic
     cpuSramEnabled = true;
     cpuFlashEnabled = true;
@@ -3015,14 +3271,14 @@ void CPUReset()
     cpuFlashEnabled = false;
     cpuEEPROMEnabled = false;
     cpuEEPROMSensorEnabled = false;
-    //cpuSaveGameFunc = sramWrite;
+    cpuSaveGameFunc = sramWrite;
     break;
   case 3: // FLASH
     cpuSramEnabled = false;
     cpuFlashEnabled = true;
     cpuEEPROMEnabled = false;
     cpuEEPROMSensorEnabled = false;
-    //cpuSaveGameFunc = flashWrite;
+    cpuSaveGameFunc = flashWrite;
     break;
   case 4: // EEPROM+Sensor
     cpuSramEnabled = false;
@@ -3036,11 +3292,11 @@ void CPUReset()
     cpuEEPROMEnabled = false;
     cpuEEPROMSensorEnabled = false;
     break;
-  } */
+  } 
 
-  //systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
+  systemSaveUpdateCounter = SYSTEM_SAVE_NOT_UPDATED;
   
-//  lastTime = systemGetClock();
+  lastTime = systemGetClock();
 }
 
 void CPUInterrupt()
@@ -3109,7 +3365,7 @@ void CPULoop(int ticks)
   }
   
   for(;;) {
-/*#ifndef FINAL_VERSION
+#ifndef FINAL_VERSION
     if(systemDebug) {
       if(systemDebug >= 10 && !holdState) {
         CPUUpdateCPSR();
@@ -3132,48 +3388,12 @@ void CPULoop(int ticks)
 #endif
       }
     }
-#endif*/
+#endif
 
     if(!holdState) {
       if(armState) {
-	    if(((armNextPC >> 24) >= 8 ) && ((armNextPC >> 24) <= 13)&&!cpuIsMultiBoot)
-		{
-		if(!optData[(armNextPC)&0x1FFFFFC])
-			optCount+=4;
-		
-		if(optData[armNextPC & 0x1FFFFFC] < number_loops) optData[(armNextPC)&0x1FFFFFC]++; // = true;
-		if(optData[(armNextPC & 0x1FFFFFC)+1] < number_loops) optData[((armNextPC)&0x1FFFFFC)+1]++; // = true;
-		if(optData[(armNextPC & 0x1FFFFFC)+2] < number_loops) optData[((armNextPC)&0x1FFFFFC)+2]++; // = true;
-		if(optData[(armNextPC & 0x1FFFFFC)+3] < number_loops) optData[((armNextPC)&0x1FFFFFC)+3]++; // = true;
-		}
-		else if (((armNextPC>>24)==2)&&cpuIsMultiBoot)
-		{
-		if(!optData[(armNextPC)&0x3FFFC])	
-			optCount+=4;
-		
-		if(optData[(armNextPC & 0x3FFFC)+0] < number_loops) optData[(armNextPC)&0x3FFFC]++; // = true;
-		if(optData[(armNextPC & 0x3FFFC)+1] < number_loops) optData[((armNextPC)&0x3FFFC)+1]++; // = true;
-		if(optData[(armNextPC & 0x3FFFC)+2] < number_loops) optData[((armNextPC)&0x3FFFC)+2]++; // = true;
-		if(optData[(armNextPC & 0x3FFFC)+3] < number_loops) optData[((armNextPC)&0x3FFFC)+3]++; // = true;
-		}
 #include "arm-new.h"
       } else {
-	    if(((armNextPC >> 24) >= 8 ) && ((armNextPC >> 24) <= 13)&&!cpuIsMultiBoot)
-		{
-		if(!optData[(armNextPC)&0x1FFFFFE])
-			optCount+=2;
-		
-		if(optData[armNextPC & 0x1FFFFFE] < number_loops) optData[(armNextPC & 0x1FFFFFE)]++; // = true;
-		if(optData[(armNextPC & 0x1FFFFFE)+1] < number_loops) optData[(armNextPC & 0x1FFFFFE)+1]++; // = true;
-		}
-		else if (((armNextPC>>24)==2)&&cpuIsMultiBoot)
-		{
-		if(!optData[(armNextPC)&0x3FFFE])
-			optCount+=2;
-		
-		if(optData[(armNextPC & 0x3FFFE)+0] < number_loops) optData[(armNextPC)&0x3FFFE]++; // = true;
-		if(optData[(armNextPC & 0x3FFFE)+1] < number_loops) optData[((armNextPC)&0x3FFFE)+1]++; // = true;
-		}
 #include "thumb.h"
       }
     } else {
@@ -3241,9 +3461,9 @@ void CPULoop(int ticks)
             CPUCompareVCOUNT();
           }
         } else {
-          //int framesToSkip = systemFrameSkip;
-          //if(speedup)
-          //  framesToSkip = 9; // try 6 FPS during speedup
+          int framesToSkip = systemFrameSkip;
+          if(speedup)
+            framesToSkip = 9; // try 6 FPS during speedup
           
           if(DISPSTAT & 2) {
             // if in H-Blank, leave it and move to drawing mode
@@ -3254,29 +3474,29 @@ void CPULoop(int ticks)
             DISPSTAT &= 0xFFFD;
             if(VCOUNT == 160) {
               count++;
-              //systemFrame();
+              systemFrame();
               
-              //if((count % 10) == 0) {
-              //  system10Frames(60);
-              //}
+              if((count % 10) == 0) {
+                system10Frames(60);
+              }
               if(count == 60) {
-//                u32 time = systemGetClock();
-//                if(time != lastTime) {
-//                  u32 t = 100000/(time - lastTime);
-               //   systemShowSpeed(t);
-//                } else
-               //   systemShowSpeed(0);
-//                lastTime = time;
+                u32 time = systemGetClock();
+                if(time != lastTime) {
+                  u32 t = 100000/(time - lastTime);
+                  systemShowSpeed(t);
+                } else
+                  systemShowSpeed(0);
+                lastTime = time;
                 count = 0;
               }
               u32 joy = 0;
               // update joystick information
-              //if(systemReadJoypads())
+              if(systemReadJoypads())
                 // read default joystick
-              //  joy = systemReadJoypad(-1);
+                joy = systemReadJoypad(-1);
               P1 = 0x03FF ^ (joy & 0x3FF);
-              //if(cpuEEPROMSensorEnabled)
-              //  systemUpdateMotionSensor();              
+              if(cpuEEPROMSensorEnabled)
+                systemUpdateMotionSensor();              
               UPDATE_REG(0x130, P1);
               u16 P1CNT = READ16LE(((u16 *)&ioMem[0x132]));
               // this seems wrong, but there are cases where the game
@@ -3299,17 +3519,17 @@ void CPULoop(int ticks)
               
               u32 ext = (joy >> 10);
               int cheatTicks = 0;
-              //if(cheatsEnabled)
-              //  cheatsCheckKeys(P1^0x3FF, ext);
+              if(cheatsEnabled)
+                cheatsCheckKeys(P1^0x3FF, ext);
               cpuDmaTicksToUpdate += cheatTicks;
               speedup = (ext & 1) ? true : false;
               capture = (ext & 2) ? true : false;
               
-              //if(capture && !capturePrevious) {
-              //  captureNumber++;
-              //  systemScreenCapture(captureNumber);
-              //}
-              //capturePrevious = capture;
+              if(capture && !capturePrevious) {
+                captureNumber++;
+                systemScreenCapture(captureNumber);
+              }
+              capturePrevious = capture;
               
               DISPSTAT |= 1;
               DISPSTAT &= 0xFFFD;
@@ -3319,51 +3539,50 @@ void CPULoop(int ticks)
                 UPDATE_REG(0x202, IF);
               }
               CPUCheckDMA(1, 0x0f);
-//              if(frameCount >= framesToSkip) {
-//                systemDrawScreen();
-//                frameCount = 0;
-//              } 
-//			  else 
-//                frameCount++;
-//              if(systemPauseOnFrame())
-//                ticks = 0;
+              if(frameCount >= framesToSkip) {
+                systemDrawScreen();
+                frameCount = 0;
+              } else 
+                frameCount++;
+              if(systemPauseOnFrame())
+                ticks = 0;
             }
             
             UPDATE_REG(0x04, DISPSTAT);
             
             CPUCompareVCOUNT(); 
           } else {
-            //if(frameCount >= framesToSkip) {
-//              (*renderLine)();
+            if(frameCount >= framesToSkip) {
+              (*renderLine)();
               
-/*              switch(systemColorDepth) {
-//              case 16:
-//                {
-//                  u16 *dest = (u16 *)pix + 242 * (VCOUNT+1);
-//                  for(int x = 0; x < 240;) {
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+              switch(systemColorDepth) {
+              case 16:
+                {
+                  u16 *dest = (u16 *)pix + 242 * (VCOUNT+1);
+                  for(int x = 0; x < 240;) {
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
                     
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
                     
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
                     
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
-//                  }
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                    *dest++ = systemColorMap16[lineMix[x++]&0xFFFF];
+                  }
                   // for filters that read past the screen
- //                 *dest++ = 0;
- //               }
+                  *dest++ = 0;
+                }
                 break;
               case 24:
                 {
@@ -3433,8 +3652,8 @@ void CPULoop(int ticks)
                   }
                 }
                 break;
-              }*/
-            //}
+              }
+            }
             // entering H-Blank
             DISPSTAT |= 2;
             UPDATE_REG(0x04, DISPSTAT);
@@ -3707,25 +3926,25 @@ struct EmulatedSystem GBASystem = {
   // emuCleanUp
   CPUCleanUp,
   // emuReadBattery
-  //CPUReadBatteryFile,
+  CPUReadBatteryFile,
   // emuWriteBattery
-  //CPUWriteBatteryFile,
+  CPUWriteBatteryFile,
   // emuReadState
-  //CPUReadState,
+  CPUReadState,
   // emuWriteState
-  //CPUWriteState,
+  CPUWriteState,
   // emuReadMemState
-  //CPUReadMemState,
+  CPUReadMemState,
   // emuWriteMemState
-  //CPUWriteMemState,
+  CPUWriteMemState,
   // emuWritePNG
-  //CPUWritePNGFile,
+  CPUWritePNGFile,
   // emuWriteBMP
-  //CPUWriteBMPFile,
+  CPUWriteBMPFile,
   // emuUpdateCPSR
   CPUUpdateCPSR,
   // emuHasDebugger
-  //true,
+  true,
   // emuCount
 #ifdef FINAL_VERSION
   250000
@@ -3733,41 +3952,3 @@ struct EmulatedSystem GBASystem = {
   5000
 #endif
 };
-
-
-//putting the NULLed system functions here, for simplicity
-void systemMessage(int number, const char *defaultMsg, ...)
-{
-
-}
-
-void systemSoundShutdown()
-{
-
-}
-
-void systemSoundPause()
-{
-
-}
-
-void systemSoundReset()
-{
-
-}
-
-void systemSoundResume()
-{
-
-}
-
-void systemWriteDataToSoundBuffer()			//this one actually outputs the sound, I do believe
-{
-
-}
-
-bool systemCanChangeSoundQuality()
-{
-  return true;
-}
-

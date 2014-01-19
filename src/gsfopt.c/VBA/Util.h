@@ -32,18 +32,16 @@ typedef struct {
   int size;
 } variable_desc;
 
-
-//extern bool utilWritePNGFile(const char *, int, int, u8 *);
-//extern bool utilWriteBMPFile(const char *, int, int, u8 *);
-//extern void utilApplyIPS(const char *ips, u8 **rom, int *size);
-//extern void utilWriteBMP(char *, int, int, u8 *);
+extern bool utilWritePNGFile(const char *, int, int, u8 *);
+extern bool utilWriteBMPFile(const char *, int, int, u8 *);
+extern void utilApplyIPS(const char *ips, u8 **rom, int *size);
+extern void utilWriteBMP(char *, int, int, u8 *);
 extern bool utilIsGBAImage(const char *);
 extern bool utilIsGBImage(const char *);
 extern bool utilIsZipFile(const char *);
 extern bool utilIsGzipFile(const char *);
 extern bool utilIsRarFile(const char *);
 extern void utilGetBaseName(const char *, char *);
-extern void utilGetBasePath(const char *file, char *buffer);
 extern IMAGE_TYPE utilFindType(const char *);
 extern u8 *utilLoad(const char *,
                     bool (*)(const char*),

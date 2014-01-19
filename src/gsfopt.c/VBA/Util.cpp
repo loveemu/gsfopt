@@ -19,10 +19,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../zlib/zlib.h"
+#include <zlib.h>
 
 extern "C" {
-//#include <png.h>
+#include <png.h>
 }
 
 #if 0
@@ -32,35 +32,25 @@ extern "C" {
 #include "System.h"
 #include "NLS.h"
 #include "Util.h"
-//#include "Flash.h"
+#include "Flash.h"
 #include "GBA.h"
 #include "Globals.h"
-//#include "RTC.h"
+#include "RTC.h"
 #include "Port.h"
-
 
 
 extern "C" {
 #include "memgzio.h"
-#include "psftag.h"
 }
 
 #ifndef _MSC_VER
 #define _stricmp strcasecmp
 #endif // ! _MSC_VER
 
-//extern int systemColorDepth;
-//extern int systemRedShift;
-//extern int systemGreenShift;
-//extern int systemBlueShift;
+static int (*utilGzWriteFunc)(gzFile, const voidp, unsigned int) = NULL;
+static int (*utilGzReadFunc)(gzFile, voidp, unsigned int) = NULL;
+static int (*utilGzCloseFunc)(gzFile) = NULL;
 
-//extern u16 systemColorMap16[0x10000];
-//extern u32 systemColorMap32[0x10000];
-
-static int (ZEXPORT *utilGzWriteFunc)(gzFile, const voidp, unsigned int) = NULL;
-static int (ZEXPORT *utilGzReadFunc)(gzFile, voidp, unsigned int) = NULL;
-static int (ZEXPORT *utilGzCloseFunc)(gzFile) = NULL;
-/*
 bool utilWritePNGFile(const char *fileName, int w, int h, u8 *pix)
 {
   u8 writeBuffer[512 * 3];
@@ -187,7 +177,7 @@ bool utilWritePNGFile(const char *fileName, int w, int h, u8 *pix)
   fclose(fp);
 
   return true;  
-}*/
+}
 
 void utilPutDword(u8 *p, u32 value)
 {
@@ -202,7 +192,7 @@ void utilPutWord(u8 *p, u16 value)
   *p++ = value & 255;
   *p = (value >> 8) & 255;
 }
-/*
+
 void utilWriteBMP(char *buf, int w, int h, u8 *pix)
 {
   u8 *b = (u8 *)buf;
@@ -268,8 +258,8 @@ void utilWriteBMP(char *buf, int w, int h, u8 *pix)
     }
     break;
   }  
-}*/
-/*
+}
+
 bool utilWriteBMPFile(const char *fileName, int w, int h, u8 *pix)
 {
   u8 writeBuffer[512 * 3];
@@ -394,7 +384,7 @@ bool utilWriteBMPFile(const char *fileName, int w, int h, u8 *pix)
 
   return true;
 }
-*/
+
 static int utilReadInt2(FILE *f)
 {
   int res = 0;
@@ -425,7 +415,7 @@ static int utilReadInt3(FILE *f)
   return c + (res<<8);
 }
 
-/*void utilApplyIPS(const char *ips, u8 **r, int *s)
+void utilApplyIPS(const char *ips, u8 **r, int *s)
 {
   // from the IPS spec at http://zerosoft.zophar.net/ips.htm
   FILE *f = fopen(ips, "rb");
@@ -481,318 +471,14 @@ static int utilReadInt3(FILE *f)
   // close the file
   fclose(f);
 }
-*/
 
 extern bool cpuIsMultiBoot;
-
-Byte *compbuf;
-Byte *uncompbuf;
-
-
-extern "C"
-{
-int LengthFromString(const char * timestring) {
-	int c=0,decimalused=0,multiplier=1;
-	int total=0;
-	if (strlen(timestring) == 0) return 0;
-	for (c=strlen(timestring)-1; c >= 0; c--) {
-		if (timestring[c]=='.' || timestring[c]==',') {
-			decimalused=1;
-			total*=1000/multiplier;
-			multiplier=1000;
-		} else if (timestring[c]==':') multiplier=multiplier*6/10;
-		else {
-			total+=(timestring[c]-'0')*multiplier;
-			multiplier*=10;
-		}
-	}
-	if (!decimalused) total*=1000;
-	return total;
-}
-
-}
-
-#include <windows.h>
-
-extern "C" unsigned long GSF_entrypoint;
-extern "C" unsigned long GSF_offset;
-extern "C" unsigned long GSF_rom_size;
-extern "C" unsigned char IsGSFLIB;
-
-//extern "C" unsigned char bReadingLib;
-
-struct GSF_FILE {
-	Byte *program;
-	Byte *reserved;
-	char psftag[50001];
-	char libname[0x40];
-	bool gsfloaded;
-};
-
-
-GSF_FILE decompressGSF(const char * file, int libnum=1)
-{
-	GSF_FILE gsffile;
-	char libtag[0x40];
-	char libname[0x8];
-	unsigned long filesize;
-    unsigned long header;
-    unsigned long reserved;
-    unsigned long program;
-    unsigned long ccrc;
-    unsigned long decompsize=12;
-	FILE *f;
-	memset(gsffile.psftag,0,sizeof(gsffile.psftag));
-	gsffile.program=NULL;
-	gsffile.reserved=NULL;
-	memset(gsffile.libname,0,sizeof(gsffile.libname));
-	gsffile.gsfloaded = false;
-	
-	f=fopen(file,"rb");
-	 
-     if(f==NULL)
-		  return gsffile;
-	  fseek(f,0,SEEK_END); filesize=ftell(f); fseek(f,0,SEEK_SET);
-	
-	  if((filesize<0x10)||(filesize>0x4000000))
-	  {
-		  fclose(f);
-		  return gsffile;
-	  }
-	  fread(&header,1,4,f);
-	  
-	  if(header!=0x22465350)
-	  {
-		  fclose(f);
-		  return gsffile;
-	  }
-	  fread(&reserved,1,4,f);
-	  fread(&program,1,4,f);
-	  fread(&ccrc,1,4,f);
-	  
-	  if((reserved+program+16)>filesize)
-	  {
-		  fclose(f);
-		  return gsffile;
-	  }
-
-	  if(reserved>0)
-	  {
-		  gsffile.reserved = (Byte*) malloc(reserved);
-		  if(gsffile.reserved==NULL)
-		  {
-			  fclose(f);
-			  return gsffile;
-		  }
-		  fread(gsffile.reserved,1,reserved,f);
-	  }
-	
-	  if(program>0)
-	  {
-			compbuf = (Byte*) malloc(program);
-			if(compbuf==NULL)
-			{
-				fclose(f);
-				return gsffile;
-			}
-			 
-			fread(compbuf,1,program,f);
-			  
-			if(ccrc != crc32(crc32(0L, Z_NULL, 0), compbuf, program))
-			{
-				fclose(f);
-				free(compbuf);
-				return gsffile;
-			}
-			uncompbuf = (Byte*) malloc(decompsize);
-			if (uncompbuf == NULL)
-			{
-				fclose(f);
-				free(compbuf);
-				return gsffile;
-			}
-			if(uncompress(uncompbuf,&decompsize,compbuf,program)!=Z_BUF_ERROR)
-			{
-				fclose(f);
-				free(compbuf);
-				free(uncompbuf);
-				return gsffile;
-			}
-			memcpy(&decompsize,uncompbuf+8,sizeof(decompsize));
-			free(uncompbuf);
-			decompsize +=12;
-			uncompbuf = (Byte*) malloc(decompsize);
-			if (uncompbuf == NULL)
-			{
-				fclose(f);
-				free(compbuf);
-				return gsffile;
-			}
-
-			
-			if(uncompress(uncompbuf,&decompsize,compbuf,program) != Z_OK)
-			{
-				fclose(f);
-				free(compbuf);
-				free(uncompbuf);
-				return gsffile;
-			}
-			 
-			uncompbuf+=3;
-			if((*uncompbuf==0x02)&&(libnum==1))
-				cpuIsMultiBoot = true;
-			uncompbuf-=3;
-			free(compbuf);
-			gsffile.program=uncompbuf;
-	  }
-	  fread(gsffile.psftag,1,5,f);
-	  if(!stricmp(gsffile.psftag,"[TAG]"))
-	  {
-	    fread(gsffile.psftag,1,50000,f);
-	  }
-
-	  if(libnum==1)
-		  sprintf(libname,"_lib");
-	  else
-		  sprintf(libname,"_lib%d",libnum);
-	  if(!psftag_raw_getvar(gsffile.psftag,libname,libtag,sizeof(libtag)-1))
-	  {
-		  memcpy(gsffile.libname,libtag,sizeof(gsffile.libname));
-	  }
-
-	  fclose(f);
-	  if((program+reserved)==0)
-	  {
-		  return gsffile;
-	  }
-
-	gsffile.gsfloaded = true;
-
-
-	return gsffile;
-}
-
-#define MAX_GSFLIB 11
-GSF_FILE gsflib[MAX_GSFLIB];
-
-bool utildecompGSF(const char * file)
-{
-	unsigned long decompsize;
-	unsigned long offset;
-	unsigned long size;
-	char filename[260];
-	char tempname[260];
-	char libtag[0x40];
-	char libname[8];
-//	char length[256],fade[256],volume[256];
-
-	int i, j;
-
-	GSF_FILE gsffile;
-
-	for(i=0;i<MAX_GSFLIB;i++)
-	{
-		gsflib[i].program = NULL;
-		gsflib[i].reserved = NULL;
-		gsflib[i].gsfloaded = false;
-		memset(gsflib[i].psftag,0,sizeof(gsflib[i].psftag));
-		memset(gsflib[i].libname,0,sizeof(gsflib[i].libname));
-	}
-
-	
-	gsffile = decompressGSF(file,1);
-	gsflib[0]=gsffile;
-	if(gsffile.gsfloaded == false)
-		return false;
-
-   decompsize = 12;
-	
-	//if(gsffile.libname[0]!=0) {
-	if(!psftag_raw_getvar(gsffile.psftag,"_lib",libtag,sizeof(libtag)-1)) {
-
-		utilGetBasePath(file,tempname);
-		sprintf(filename,"%s\\%s",tempname,libtag);
-		gsflib[1] = decompressGSF(filename,2);
-
-		if(gsflib[1].gsfloaded == false)
-		{
-			free(uncompbuf);
-			return false;
-		}
-
-		memcpy(&offset,gsffile.program+4,sizeof(offset));
-		memcpy(&size,gsffile.program+8,sizeof(size));
-		offset&=0x01FFFFFF;
-		memcpy(gsflib[1].program+12+offset,gsffile.program+12,size);
-		free(gsffile.program);
-		uncompbuf=gsflib[1].program;
-
-
-		for(i=2;i<MAX_GSFLIB;i++)
-		{
-			sprintf(libname,"_lib%d",i);
-			for(j=0;j<i;j++)
-			{
-				if(!psftag_raw_getvar(gsflib[j].psftag,libname,libtag,sizeof(libtag)-1)) {
-					sprintf(filename,"%s\\%s",tempname,libtag);
-					gsflib[i] = decompressGSF(filename,i+1);
-					if(gsflib[i].gsfloaded == false)
-					{
-						free(uncompbuf);
-						return false;
-					}
-					memcpy(&offset,gsflib[i].program+4,sizeof(offset));
-					memcpy(&size,gsflib[i].program+8,sizeof(size));
-					offset&=0x01FFFFFF;
-					memcpy(gsflib[1].program+12+offset,gsflib[i].program+12,size);
-					free(gsflib[i].program);
-					break;
-				}
-			}
-			if(gsflib[i].program == NULL)
-				break;
-		}
-
-		uncompbuf=gsflib[1].program;
-
-	}
-	else
-		uncompbuf=gsffile.program;
-
-	memcpy(&GSF_entrypoint,uncompbuf,sizeof(GSF_entrypoint));
-	memcpy(&GSF_offset,uncompbuf+4,sizeof(GSF_offset));
-	memcpy(&GSF_rom_size,uncompbuf+8,sizeof(GSF_rom_size));
-	  
-	return true;
-
-}
-
-bool utilIsGSF(const char * file)
-{
-  bool IsGSF = false;
-  
-
-  if(strlen(file) > 4) {
-    char *p = strrchr((char*)file,'.');
-
-	if(p != NULL) {
-	  if(_stricmp(p, ".gsf") == 0)
-	    IsGSF = true;
-	  if(_stricmp(p, ".minigsf") == 0)
-	    IsGSF = true;
-	  if(_stricmp(p, ".gsflib") == 0)
-	    IsGSF = true;
-	}
-  }
-
-  return IsGSF;
-}
 
 bool utilIsGBAImage(const char * file)
 {
   cpuIsMultiBoot = false;
   if(strlen(file) > 4) {
-    char * p = strrchr((char*)file,'.');
+    char * p = strrchr(file,'.');
 
     if(p != NULL) {
       if(_stricmp(p, ".gba") == 0)
@@ -803,8 +489,6 @@ bool utilIsGBAImage(const char * file)
         return true;
       if(_stricmp(p, ".elf") == 0)
         return true;
-	  if(utilIsGSF(file))
-	    return utildecompGSF(file);
       if(_stricmp(p, ".mb") == 0) {
         cpuIsMultiBoot = true;
         return true;
@@ -818,7 +502,7 @@ bool utilIsGBAImage(const char * file)
 bool utilIsGBImage(const char * file)
 {
   if(strlen(file) > 4) {
-    char * p = strrchr((char*)file,'.');
+    char * p = strrchr(file,'.');
 
     if(p != NULL) {
       if(_stricmp(p, ".gb") == 0)
@@ -838,7 +522,7 @@ bool utilIsGBImage(const char * file)
 bool utilIsZipFile(const char *file)
 {
   if(strlen(file) > 4) {
-    char * p = strrchr((char*)file,'.');
+    char * p = strrchr(file,'.');
 
     if(p != NULL) {
       if(_stricmp(p, ".zip") == 0)
@@ -868,7 +552,7 @@ bool utilIsRarFile(const char *file)
 bool utilIsGzipFile(const char *file)
 {
   if(strlen(file) > 3) {
-    char * p = strrchr((char*)file,'.');
+    char * p = strrchr(file,'.');
 
     if(p != NULL) {
       if(_stricmp(p, ".gz") == 0)
@@ -892,15 +576,6 @@ void utilGetBaseName(const char *file, char *buffer)
       *p = 0;
   }
 }
-void utilGetBasePath(const char *file, char *buffer)
-{
-	strcpy(buffer,file);
-
-	char *p = strrchr(buffer, '\\');
-
-	if(p)
-		*p = 0;
-}
 
 IMAGE_TYPE utilFindType(const char *file)
 {
@@ -910,7 +585,7 @@ IMAGE_TYPE utilFindType(const char *file)
     unzFile unz = unzOpen(file);
     
     if(unz == NULL) {
-      printf("Cannot open file %s", file);
+      systemMessage(MSG_CANNOT_OPEN_FILE, N_("Cannot open file %s"), file);
       return IMAGE_UNKNOWN;
     }
     
@@ -918,7 +593,7 @@ IMAGE_TYPE utilFindType(const char *file)
     
     if(r != UNZ_OK) {
       unzClose(unz);
-      printf("Bad ZIP file %s", file);
+      systemMessage(MSG_BAD_ZIP_FILE, N_("Bad ZIP file %s"), file);
       return IMAGE_UNKNOWN;
     }
     
@@ -938,7 +613,7 @@ IMAGE_TYPE utilFindType(const char *file)
       
       if(r != UNZ_OK) {
         unzClose(unz);
-        printf("Bad ZIP file %s", file);
+        systemMessage(MSG_BAD_ZIP_FILE, N_("Bad ZIP file %s"), file);
         return IMAGE_UNKNOWN;
       }
       
@@ -1171,7 +846,6 @@ static u8 *utilLoadGzipFile(const char *file,
   return image;  
 }
 
-
 #if 0
 static u8 *utilLoadRarFile(const char *file,
                            bool (*accept)(const char *),
@@ -1237,27 +911,8 @@ u8 *utilLoad(const char *file,
     return utilLoadRarFile(file, accept, data, size);
   }
 #endif
-  unsigned long programsize;
-
+  
   u8 *image = data;
-
-  if(utilIsGSF(file)) {
-	 memcpy(&programsize,uncompbuf+8,sizeof(programsize));
-	 size = programsize;
-	 if(image == NULL) {
-		image = (u8 *)malloc(utilGetSize(size));
-		if(image == NULL) {
-		systemMessage(MSG_OUT_OF_MEMORY, N_("Failed to allocate memory for %s"),
-						"data");
-		return NULL;
-		}
-     }
-	 memcpy(image,uncompbuf+12,programsize);
-	 free(uncompbuf);
-	 return image;
-  }
-  
-  
 
   FILE *f = fopen(file, "rb");
 
@@ -1329,7 +984,7 @@ void utilWriteData(gzFile gzFile, variable_desc *data)
 
 gzFile utilGzOpen(const char *file, const char *mode)
 {
-  utilGzWriteFunc = (int (ZEXPORT *)(void *,void * const, unsigned int))gzwrite;
+  utilGzWriteFunc = (int (*)(void *,void * const, unsigned int))gzwrite;
   utilGzReadFunc = gzread;
   utilGzCloseFunc = gzclose;
 
@@ -1408,34 +1063,7 @@ void utilGBAFindSave(const u8 *data, const int size)
   if(saveType == 0) {
     saveType = 5;
   }
-  //rtcEnable(rtcFound);
-  //cpuSaveType = saveType;
-  //flashSetSize(flashSize);
+  rtcEnable(rtcFound);
+  cpuSaveType = saveType;
+  flashSetSize(flashSize);
 }
-
-/*void utilUpdateSystemColorMaps()
-{
-  switch(systemColorDepth) {
-  case 16: 
-    {
-      for(int i = 0; i < 0x10000; i++) {
-        systemColorMap16[i] = ((i & 0x1f) << systemRedShift) |
-          (((i & 0x3e0) >> 5) << systemGreenShift) |
-          (((i & 0x7c00) >> 10) << systemBlueShift);
-      }
-    }
-    break;
-  case 24:
-  case 32:
-    {
-      for(int i = 0; i < 0x10000; i++) {
-        systemColorMap32[i] = ((i & 0x1f) << systemRedShift) |
-          (((i & 0x3e0) >> 5) << systemGreenShift) |
-          (((i & 0x7c00) >> 10) << systemBlueShift);
-      }
-    }
-    break;
-  }
-}*/
-
-

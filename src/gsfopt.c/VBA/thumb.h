@@ -1418,7 +1418,6 @@ switch(opcode >> 8) {
  case 0x48:
    // LDR R0,[PC, #Imm]
    {
-	 //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);
      reg[0].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);
@@ -1427,7 +1426,6 @@ switch(opcode >> 8) {
  case 0x49:
    // LDR R1,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);   
      reg[1].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);
@@ -1436,7 +1434,6 @@ switch(opcode >> 8) {
  case 0x4a:
    // LDR R2,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[2].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1445,7 +1442,6 @@ switch(opcode >> 8) {
  case 0x4b:
    // LDR R3,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[3].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1454,7 +1450,6 @@ switch(opcode >> 8) {
  case 0x4c:
    // LDR R4,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[4].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1463,7 +1458,6 @@ switch(opcode >> 8) {
  case 0x4d:
    // LDR R5,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[5].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1472,7 +1466,6 @@ switch(opcode >> 8) {
  case 0x4e:
    // LDR R6,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[6].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1481,7 +1474,6 @@ switch(opcode >> 8) {
  case 0x4f:
    // LDR R7,[PC, #Imm]
    {
-	    //printf("\nCalling CPUReadMemoryQuick");
      u32 address = (reg[15].I & 0xFFFFFFFC) + ((opcode & 0xFF) << 2);      
      reg[7].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
@@ -1652,8 +1644,6 @@ switch(opcode >> 8) {
    // LDRH Rd, [Rs, #Imm]
    {
      u32 address = reg[(opcode>>3)&7].I + (((opcode>>6)&31)<<1);
-	 //if ((address >> 24) == 8)
-	 //  printf("Special ReadHalfWord");
      reg[opcode&7].I = CPUReadHalfWord(address);
      clockTicks += CPUUpdateTicksAccess16(address);
    }
@@ -1725,9 +1715,7 @@ switch(opcode >> 8) {
  case 0x98:
    // LDR R0, [SP, #Imm]
    {
-     u32 address = reg[13].I + ((opcode&255)<<2);  
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
+     u32 address = reg[13].I + ((opcode&255)<<2);   
      reg[0].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1735,9 +1723,7 @@ switch(opcode >> 8) {
  case 0x99:
    // LDR R1, [SP, #Imm]
    {
-     u32 address = reg[13].I + ((opcode&255)<<2);  
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
+     u32 address = reg[13].I + ((opcode&255)<<2);   
      reg[1].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1746,8 +1732,6 @@ switch(opcode >> 8) {
    // LDR R2, [SP, #Imm]
    {
      u32 address = reg[13].I + ((opcode&255)<<2);   
-	 if ((address >> 24) == 8)
-	   printf("Special CPUReadMemoryQuick");
      reg[2].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1755,9 +1739,7 @@ switch(opcode >> 8) {
  case 0x9b:
    // LDR R3, [SP, #Imm]
    {
-     u32 address = reg[13].I + ((opcode&255)<<2);
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
+     u32 address = reg[13].I + ((opcode&255)<<2);   
      reg[3].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1766,8 +1748,6 @@ switch(opcode >> 8) {
    // LDR R4, [SP, #Imm]
    {
      u32 address = reg[13].I + ((opcode&255)<<2);   
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
      reg[4].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1776,8 +1756,6 @@ switch(opcode >> 8) {
    // LDR R5, [SP, #Imm]
    {
      u32 address = reg[13].I + ((opcode&255)<<2);   
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
      reg[5].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1785,9 +1763,7 @@ switch(opcode >> 8) {
  case 0x9e:
    // LDR R6, [SP, #Imm]
    {
-     u32 address = reg[13].I + ((opcode&255)<<2); 
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
+     u32 address = reg[13].I + ((opcode&255)<<2);   
      reg[6].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }
@@ -1795,9 +1771,7 @@ switch(opcode >> 8) {
  case 0x9f:
    // LDR R7, [SP, #Imm]
    {
-     u32 address = reg[13].I + ((opcode&255)<<2);  
-	 //if ((address >> 24) == 8)
-	 //  printf("Special CPUReadMemoryQuick");
+     u32 address = reg[13].I + ((opcode&255)<<2);   
      reg[7].I = CPUReadMemoryQuick(address);
      clockTicks += CPUUpdateTicksAccess32(address);   
    }

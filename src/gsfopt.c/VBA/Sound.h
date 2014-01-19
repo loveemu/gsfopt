@@ -63,10 +63,7 @@ extern void soundEvent(u32, u16);
 extern void soundTimerOverflow(int);
 extern void soundSetQuality(int);
 
-
 //extern int SOUND_TICKS;
-extern "C"
-{
 extern int SOUND_CLOCK_TICKS;
 extern int soundTicks;
 extern int soundPaused;
@@ -75,13 +72,11 @@ extern int soundQuality;
 extern int soundBufferLen;
 extern int soundBufferTotalLen;
 extern u32 soundNextPosition;
-extern u16 soundFinalWave[2304];
+extern u16 soundFinalWave[1470];
 extern int soundVolume;
 
-extern char soundEcho;
-extern char soundLowPass;
-extern char soundReverse;
-
-}
+extern bool soundEcho;
+extern bool soundLowPass;
+extern bool soundReverse;
 
 #endif // VBA_SOUND_H

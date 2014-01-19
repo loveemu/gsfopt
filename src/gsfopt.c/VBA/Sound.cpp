@@ -17,10 +17,6 @@
 // Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 #include <memory.h>
-#include <windows.h>
-#include <stdio.h>
-
-//#include "..\in2.h"
 
 #include "GBA.h"
 #include "Globals.h"
@@ -98,17 +94,15 @@ int soundShiftClock[16]= {
   1,     // 14
   1      // 15
 };
-extern "C"
-{
 
 int soundVolume = 0;
 
 u8 soundBuffer[6][735];
-//u16 soundFinalWave[1470];
-u16 soundFinalWave[2304];
-int soundBufferLen = 576;
+u16 soundFinalWave[1470];
+
+int soundBufferLen = 1470;
 int soundBufferTotalLen = 14700;
-int soundQuality = 1;
+int soundQuality = 2;
 int soundPaused = 1;
 int soundPlay = 0;
 int soundTicks = soundQuality * USE_TICKS_AS;
@@ -203,11 +197,9 @@ s16 soundFilter[4000];
 s16 soundRight[5] = { 0, 0, 0, 0, 0 };
 s16 soundLeft[5] = { 0, 0, 0, 0, 0 };
 int soundEchoIndex = 0;
-char soundEcho = false;
-char soundLowPass = false;
-char soundReverse = false;
-
-}
+bool soundEcho = false;
+bool soundLowPass = false;
+bool soundReverse = false;
 
 variable_desc soundSaveStruct[] = {
   { &soundPaused, sizeof(int) },
@@ -1110,98 +1102,36 @@ void soundMix()
     soundFinalWave[soundBufferIndex++] = res;
 }
 
-extern "C" void DisplayError (char * Message, ...);
-
-
-unsigned short prevsound[2];
-int prevtime;
-
-extern "C" double decode_pos_ms;
-extern "C" double BPoneshot;
-extern "C" int Optt;
-extern "C" int silencedetected;
-extern "C" int silencelength;
-
 void soundTick()
 {
-	decode_pos_ms += (1./44100.)*1000.;
-
-	if(Optt)  //Only render the sound for silence detection purposes
-	{		  //if we are in timing, (and possible auto tagging purposes.
-			  //Otherwise, skip this completely.
-		//if(systemSoundOn) {						//needed?  I don't think so
-		if(soundMasterOn && !stopState) 
-		{
-			soundChannel1();
-			soundChannel2();
-			soundChannel3();
-			soundChannel4();
-			soundDirectSoundA();
-			soundDirectSoundB();
-			soundMix();
-			//check for silence...
-			//if(DetectSilence)
-			//{
-				if(!silencedetected||decode_pos_ms<100)
-				{
-					prevtime=(int)(decode_pos_ms);
-					BPoneshot=decode_pos_ms;
-				}
-				//if((soundFinalWave[soundBufferIndex-2] <=  0x200 || soundFinalWave[soundBufferIndex-2] >=  0xFE00) || 
-				  if ((soundFinalWave[soundBufferIndex-2] - prevsound[0]) <= 0x8 )
-					  //|| (prevsound[0] - soundFinalWave[soundBufferIndex-2]) <= 0x8)
-				{
-					silencedetected++;
-				//	if((silencedetected%0x100)==81)
-				//	DisplayError("Silence Detected count = %d",silencedetected);
-				}
-				else
-					silencedetected=0;
-				prevsound[0]=soundFinalWave[soundBufferIndex-2];
-				//if((soundFinalWave[soundBufferIndex-1] <=  0x200 || soundFinalWave[soundBufferIndex-1] >=  0xFE00) || 
-				  if ((soundFinalWave[soundBufferIndex-1] - prevsound[1]) <= 0x8 )
-		//		   (prevsound[1] - soundFinalWave[soundBufferIndex-1]) <= 0x8)
-					silencedetected++;
-				else
-					silencedetected=0;
-				prevsound[1]=soundFinalWave[soundBufferIndex-1];
-				//if(silencedetected>(silencelength*2*sndSamplesPerSec))
-				if((silencedetected>0)&&((decode_pos_ms - prevtime) > (silencelength*1000)))
-				{
-				//	DisplayError("%d %d %d", silencedetected,silencelength*2*sndSamplesPerSec,sndSamplesPerSec);
-					//printf("\nSILENCE DETECTED\n");
-					//silencedetected=0;
-					//end_of_track();
-					
-				}
-
-			//}
-
-		} 
-		else 
-		{
-			soundFinalWave[soundBufferIndex++] = 0;
-			soundFinalWave[soundBufferIndex++] = 0;
-		}
-		  
-		soundIndex++;
-		    
-		if(2*soundBufferIndex >= soundBufferLen) 
-		{
-			if(systemSoundOn) 
-			{
-				if(soundPaused)
-				{
-					soundResume();
-				}      
-		        
-				systemWriteDataToSoundBuffer();
-			}
-			soundIndex = 0;
-			soundBufferIndex = 0;
-		}
-	}
-	
+  if(systemSoundOn) {
+    if(soundMasterOn && !stopState) {
+      soundChannel1();
+      soundChannel2();
+      soundChannel3();
+      soundChannel4();
+      soundDirectSoundA();
+      soundDirectSoundB();
+      soundMix();
+    } else {
+      soundFinalWave[soundBufferIndex++] = 0;
+      soundFinalWave[soundBufferIndex++] = 0;
+    }
+  
+    soundIndex++;
+    
+    if(2*soundBufferIndex >= soundBufferLen) {
+      if(systemSoundOn) {
+        if(soundPaused) {
+          soundResume();
+        }      
+        
+        systemWriteDataToSoundBuffer();
+      }
+      soundIndex = 0;
+      soundBufferIndex = 0;
+    }
+  }
 }
 
 void soundShutdown()
@@ -1337,20 +1267,23 @@ void soundReset()
 
 bool soundInit()
 {
-  memset(soundBuffer[0], 0, 735*2);
-  memset(soundBuffer[1], 0, 735*2);
-  memset(soundBuffer[2], 0, 735*2);
-  memset(soundBuffer[3], 0, 735*2);
+  if(systemSoundInit()) {
+    memset(soundBuffer[0], 0, 735*2);
+    memset(soundBuffer[1], 0, 735*2);
+    memset(soundBuffer[2], 0, 735*2);
+    memset(soundBuffer[3], 0, 735*2);
     
-  memset(soundFinalWave, 0, soundBufferLen);
+    memset(soundFinalWave, 0, soundBufferLen);
     
-  soundPaused = true;
-  return true;
+    soundPaused = true;
+    return true;
+  }
+  return false;
 }  
 
 void soundSetQuality(int quality)
 {
-/*  if(soundQuality != quality && systemCanChangeSoundQuality()) {
+  if(soundQuality != quality && systemCanChangeSoundQuality()) {
     if(!soundOffFlag)
       soundShutdown();
     soundQuality = quality;
@@ -1365,7 +1298,7 @@ void soundSetQuality(int quality)
     SOUND_CLOCK_TICKS = USE_TICKS_AS * soundQuality;
     soundIndex = 0;
     soundBufferIndex = 0;
-  }*/
+  }
 }
 
 void soundSaveGame(gzFile gzFile)
