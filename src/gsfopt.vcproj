@@ -44,7 +44,7 @@
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GSFOPT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
+				RuntimeLibrary="1"
 				WarningLevel="3"
 				DebugInformationFormat="4"
 			/>
@@ -59,13 +59,13 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="zlibMD.lib setargv.obj"
+				AdditionalDependencies="zlib.lib setargv.obj"
 				LinkIncremental="2"
 				AdditionalLibraryDirectories="zlib"
+				IgnoreDefaultLibraryNames="libcmt"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -116,7 +116,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GSFOPT"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
 			/>
@@ -131,15 +131,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="zlibMD.lib setargv.obj"
+				AdditionalDependencies="zlib.lib setargv.obj"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="zlib"
-				GenerateDebugInformation="true"
+				IgnoreDefaultLibraryNames=""
 				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
 				RandomizedBaseAddress="1"
-				DataExecutionPrevention="0"
 				TargetMachine="1"
 			/>
 			<Tool
