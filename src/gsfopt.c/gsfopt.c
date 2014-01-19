@@ -9,6 +9,9 @@
 
 #include "VBA/psftag.h"
 
+#define APP_NAME    "gsfopt"
+#define APP_VER     "[2014-01-19]"
+#define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define FALSE 0
 #define TRUE 1
@@ -95,7 +98,11 @@ int LengthFromString(const char * timestring);
 
 int usage(const char * progname, int extended)
 {
-	printf("\nusage: %s <options> <-s or -l or -f or -t> <gsf files>\n",progname);
+	printf("\n");
+	printf("%s %s\n", APP_NAME, APP_VER);
+	printf("<%s>\n", APP_URL);
+	printf("\n");
+	printf("usage: %s <options> <-s or -l or -f or -t> <gsf files>\n",progname);
 	if(!extended)
 		printf("\nfor detailed usage info, type %s -?\n",progname);
 	printf("\n");
