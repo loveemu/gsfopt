@@ -197,22 +197,22 @@ void SaveOptimizedGSF(char *fn, int saveasrom=0)
 
 	for(i=GSF_rom_size-1; i>=0; i--)
 	{
-		if((optData[i] == TRUE))
+		if(optData[i] != 0)
 		{
-			for(j=i+1;(j<GSF_rom_size)&&((j-i)<paranoidbytes)&&(optData[j]==FALSE);j++)
-				optData[j] = TRUE;
+			for(j=i+1;(j<GSF_rom_size)&&((j-i)<paranoidbytes)&&(optData[j]==0);j++)
+				optData[j] = 1;
 		}
 	}
 	for(i=0;i<0xC0;i++)
 	{
-		optData[i] = TRUE;	//Preserve the Nintendo Header Area.
+		optData[i] = 1;	//Preserve the Nintendo Header Area.
 	}
     
 	for (i=0; i<GSF_rom_size; i++)
 	{
-		if ((optData[i] == TRUE)&&!cpuIsMultiBoot)		//then the byte was used
+		if ((optData[i] != 0)&&!cpuIsMultiBoot)		//then the byte was used
 			*(uncompbuf+i+12) = rom[i];		//+12 because of first three info words
-		else if ((optData[i] == TRUE)&&cpuIsMultiBoot)
+		else if ((optData[i] != 0)&&cpuIsMultiBoot)
 			*(uncompbuf+i+12) = workRAM[i];
 	}
 
