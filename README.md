@@ -6,7 +6,7 @@ Gsf set optimizer / timer created by Caitsith2, revised by loveemu.
 
 All ripped sets should be optimized before release, to remove unused code/data unrelated to music playback.
 
-This modified version fixes the fatal bug in the last release (May 6, 2007)
+This modified version fixes the fatal bug in the last official release (May 6, 2007)
 
 Caitsith2's original version can be found at GSF Central
 <http://www.caitsith2.com/gsf/ripping.html>
