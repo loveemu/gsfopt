@@ -346,7 +346,7 @@ int main(int argc, char *argv[]) {
 		{
 			
 			if (!GSFRun(argv[i])) {	printf("\nSkipping"); continue; } //opens the file and loads it into ram
-			memset(optData, TRUE, sizeof(optData));
+			memset(optData, 1, sizeof(optData));
 			SaveOptimizedGSF(argv[i],1);
 		}
 		GSFClose();
