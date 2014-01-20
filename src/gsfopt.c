@@ -102,42 +102,42 @@ int usage(const char * progname, int extended)
 	printf("%s %s\n", APP_NAME, APP_VER);
 	printf("<%s>\n", APP_URL);
 	printf("\n");
-	printf("usage: %s <options> <-s or -l or -f or -t> <gsf files>\n",progname);
+	printf("usage: %s [options] [-s or -l or -f or -t] [gsf files]\n",progname);
 	if(!extended)
 		printf("\nfor detailed usage info, type %s -?\n",progname);
 	printf("\n");
 	if(extended)
 	{
-		printf("<options>\n\n");
-		printf("-T <time>  - Runs the emulation till no new data has been found\n");
-		printf("             for <time> specified.\n");
+		printf("[options]\n\n");
+		printf("-T [time]  - Runs the emulation till no new data has been found\n");
+		printf("             for [time] specified.\n");
 		printf("             Time is specified in mm:ss.nnn format\n");
 		printf("             mm = minutes, ss = seoconds, nnn = milliseconds\n\n");
 
-		printf("-P <bytes> - I am paranoid, and wish to assume that any data \n");
-		printf("             within <bytes> bytes of a used byte, is also used\n");
+		printf("-P [bytes] - I am paranoid, and wish to assume that any data \n");
+		printf("             within [bytes] bytes of a used byte, is also used\n");
 		printf("\n\n");
-		printf("<file processing modes (-s) (-l) (-f) (-t)\n\n");
-		printf("-f <gsf files> - Optimize single files, and in the process, convert\n");
+		printf("[file processing modes (-s) (-l) (-f) (-t)\n\n");
+		printf("-f [gsf files] - Optimize single files, and in the process, convert\n");
 		printf("                 minigsfs/gsflibs to single gsf files\n\n");
-		printf("-l <gsf files> - Optimize the gsflib using passed gsf files.\n\n");
-		printf("-r <gsf files> - Convert to Rom files, no optimization\n");
-		printf("-s <gsflib> <Hex offset> <Count> - Optimize gsflib using a\n");
+		printf("-l [gsf files] - Optimize the gsflib using passed gsf files.\n\n");
+		printf("-r [gsf files] - Convert to Rom files, no optimization\n");
+		printf("-s [gsflib] [Hex offset] [Count] - Optimize gsflib using a\n");
 		printf("                                   known offset/count\n\n");
-		printf("-t <options> <gsf files>\n");
+		printf("-t [options] [gsf files]\n");
 		printf("                 Times the GSF files. (for auto tagging, use the -T option)\n");
 		printf("                 Unlike psf playback, silence detection is MANDATORY\n");
 		printf("                 Do NOT try to evade this with an excessively long silence detect\n");
 		printf("                 time.  (The max time is less than 2*Verify loops for silence detection)\n");
-		printf("<options> for -t\n");
-		printf("-V <count>       Number of verify loops at end point. (Default 20)\n");
-		printf("-L <count>       Number of loops to time for. (Default 2, max 255)\n");
+		printf("[options] for -t\n");
+		printf("-V [count]       Number of verify loops at end point. (Default 20)\n");
+		printf("-L [count]       Number of loops to time for. (Default 2, max 255)\n");
 		printf("-T               Tag the songs with found time.\n");
 		printf("                 A Fade is also added if the song is not detected\n");
 		printf("                 to be one shot.\n");
-		printf("-F <time>        Length of looping song fade. (default 10.000)\n");
-		printf("-f <time>        Length of one shot song fade. (default 1.000)\n");
-		printf("-s <time>        Time in seconds for silence detection (default 15 seconds)\n");
+		printf("-F [time]        Length of looping song fade. (default 10.000)\n");
+		printf("-f [time]        Length of one shot song fade. (default 1.000)\n");
+		printf("-s [time]        Time in seconds for silence detection (default 15 seconds)\n");
 		printf("                 Max (2*Verify loop count) seconds.\n");
 
 		printf("\n\n");
