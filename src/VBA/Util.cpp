@@ -656,7 +656,7 @@ GSF_FILE decompressGSF(const char * file, int libnum=1)
 			gsffile.program=uncompbuf;
 	  }
 	  fread(gsffile.psftag,1,5,f);
-	  if(!stricmp(gsffile.psftag,"[TAG]"))
+	  if(!_stricmp(gsffile.psftag,"[TAG]"))
 	  {
 	    fread(gsffile.psftag,1,50000,f);
 	  }

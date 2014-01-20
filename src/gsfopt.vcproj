@@ -131,6 +131,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/PDBALTPATH:%_PDB%"
 				AdditionalDependencies="zlib.lib setargv.obj"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="zlib"

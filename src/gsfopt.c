@@ -149,7 +149,7 @@ int usage(const char * progname, int extended)
 int main(int argc, char *argv[]) {
 	int i, j;
 
-	int filestart, fileend;
+	int filestart;
 
 	unsigned long offset;
 	unsigned short count;
@@ -406,7 +406,7 @@ unsigned long CountBytes(int loop, int recount)
 	{
 		for(i=0;i<256;i++)
 			j[i]=0;
-		for(i=0;i<GSF_rom_size;i++)
+		for(i=0;i<(int)GSF_rom_size;i++)
 			j[optData[i]]++;
 	}
 	return j[loop];
@@ -640,7 +640,7 @@ void GetGSFTag(char *filename, char *tag, char *value, int valuesize)
 	  fseek(f,(reserved+program+16),SEEK_SET);
 
 	  fread(GSFTAG,1,5,f);
-	  if(!stricmp(GSFTAG,"[TAG]"))
+	  if(!_stricmp(GSFTAG,"[TAG]"))
 	  {
 	    fread(GSFTAG,1,50000,f);
 	  }
@@ -696,7 +696,7 @@ void SetGSFTag(char *filename, char *tag, char *value)
 
 	  fread(GSFTAG,1,5,f);
 	  GSFTAG[5]=0;
-	  if(!stricmp(GSFTAG,"[TAG]"))
+	  if(!_stricmp(GSFTAG,"[TAG]"))
 	  {
 	    tagsize=fread(GSFTAG,1,50000,f);
 	  }

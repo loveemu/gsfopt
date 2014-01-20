@@ -199,7 +199,7 @@ void SaveOptimizedGSF(char *fn, int saveasrom=0)
 	{
 		if(optData[i] != 0)
 		{
-			for(j=i+1;(j<GSF_rom_size)&&((j-i)<paranoidbytes)&&(optData[j]==0);j++)
+			for(j=i+1;(j<(int)GSF_rom_size)&&((j-i)<paranoidbytes)&&(optData[j]==0);j++)
 				optData[j] = 1;
 		}
 	}
@@ -208,7 +208,7 @@ void SaveOptimizedGSF(char *fn, int saveasrom=0)
 		optData[i] = 1;	//Preserve the Nintendo Header Area.
 	}
     
-	for (i=0; i<GSF_rom_size; i++)
+	for (i=0; i<(int)GSF_rom_size; i++)
 	{
 		if ((optData[i] != 0)&&!cpuIsMultiBoot)		//then the byte was used
 			*(uncompbuf+i+12) = rom[i];		//+12 because of first three info words
