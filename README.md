@@ -11,6 +11,11 @@ This modified version fixes the fatal bug in the last official release (May 6, 2
 Caitsith2's original version can be found at GSF Central
 <http://www.caitsith2.com/gsf/ripping.html>
 
+Downloads
+---------
+
+- [gsfopt-20140119.7z](https://github.com/loveemu/gsfopt/releases/download/v1.0-vba172/gsfopt-20140119.7z)
+
 Usage
 -----
 
