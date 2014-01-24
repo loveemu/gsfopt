@@ -41,6 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
+				AdditionalIncludeDirectories="zlib"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GSFOPT"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
@@ -115,6 +116,7 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
+				AdditionalIncludeDirectories="zlib"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;GSFOPT"
 				RuntimeLibrary="0"
 				WarningLevel="3"
@@ -172,48 +174,72 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\gsf.cpp"
+				RelativePath=".\gsfopt.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\gsfopt.c"
+				RelativePath=".\PSFFile.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\memgzio.c"
+				RelativePath=".\ZlibReader.cpp"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\psftag.c"
+				RelativePath=".\ZlibWriter.cpp"
 				>
 			</File>
 			<Filter
-				Name="VBA"
+				Name="vbam"
 				>
-				<File
-					RelativePath=".\VBA\bios.cpp"
+				<Filter
+					Name="gba"
 					>
-				</File>
-				<File
-					RelativePath=".\VBA\GBA.cpp"
+					<File
+						RelativePath=".\vbam\gba\bios.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBA-arm.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBA-thumb.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBA.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\Sound.cpp"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="apu"
 					>
-				</File>
-				<File
-					RelativePath=".\VBA\Globals.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\VBA\Sound.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\VBA\unzip.cpp"
-					>
-				</File>
-				<File
-					RelativePath=".\VBA\Util.cpp"
-					>
-				</File>
+					<File
+						RelativePath=".\vbam\apu\Blip_Buffer.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Effects_Buffer.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Gb_Apu.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Gb_Oscs.cpp"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Multi_Buffer.cpp"
+						>
+					</File>
+				</Filter>
 			</Filter>
 		</Filter>
 		<Filter
@@ -222,77 +248,105 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\VBA\arm-new.h"
+				RelativePath=".\cpath.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\bios.h"
+				RelativePath=".\gsfopt.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\GBA.h"
+				RelativePath=".\PSFFile.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\GBAinline.h"
+				RelativePath=".\ZlibReader.h"
 				>
 			</File>
 			<File
-				RelativePath=".\VBA\Globals.h"
+				RelativePath=".\ZlibWriter.h"
 				>
 			</File>
-			<File
-				RelativePath=".\VBA\interp.h"
+			<Filter
+				Name="vbam"
 				>
-			</File>
-			<File
-				RelativePath=".\VBA\memgzio.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\NLS.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\Port.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\psftag.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\Sound.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\System.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\thumb.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\unzip.h"
-				>
-			</File>
-			<File
-				RelativePath=".\VBA\Util.h"
-				>
-			</File>
-			<File
-				RelativePath=".\zlib\zconf.h"
-				>
-			</File>
-			<File
-				RelativePath=".\zlib\zlib.h"
-				>
-			</File>
-			<File
-				RelativePath=".\zlib\zutil.h"
-				>
-			</File>
+				<Filter
+					Name="apu"
+					>
+					<File
+						RelativePath=".\vbam\apu\blargg_common.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\blargg_config.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\blargg_source.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Blip_Buffer.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Effects_Buffer.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Gb_Apu.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Gb_Oscs.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\apu\Multi_Buffer.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="common"
+					>
+					<File
+						RelativePath=".\vbam\common\Port.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\common\Types.h"
+						>
+					</File>
+				</Filter>
+				<Filter
+					Name="gba"
+					>
+					<File
+						RelativePath=".\vbam\gba\bios.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBA.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBAcpu.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\GBAinline.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\Globals.h"
+						>
+					</File>
+					<File
+						RelativePath=".\vbam\gba\Sound.h"
+						>
+					</File>
+				</Filter>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="Resource Files"

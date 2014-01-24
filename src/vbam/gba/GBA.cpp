@@ -237,6 +237,12 @@ GBASystem::GBASystem()
 
     gb_apu = 0;
     stereo_buffer = 0;
+
+#ifdef GSFOPT
+    rom_refs = NULL;
+    min_ref_update = 0xff;
+    bytes_used = 0;
+#endif
 }
 
 const int TIMER_TICKS[4] = {
@@ -472,6 +478,13 @@ void CPUCleanUp(GBASystem * gba)
     gba->rom = NULL;
   }
 
+#ifdef GSFOPT
+  if(gba->rom_refs != NULL) {
+    free(gba->rom_refs);
+    gba->rom_refs = NULL;
+  }
+#endif
+
   if(gba->vram != NULL) {
     free(gba->vram);
     gba->vram = NULL;
@@ -523,6 +536,17 @@ int CPULoadRom(GBASystem *gba, const void *rom, u32 size)
   if(gba->workRAM == NULL) {
     return 0;
   }
+
+#ifdef GSFOPT
+  if (gba->cpuIsMultiBoot)
+  {
+    gba->rom_refs = (u8 *)malloc(0x40000);
+  }
+  else
+  {
+    gba->rom_refs = (u8 *)malloc(0x2000000);
+  }
+#endif
 
   if (gba->cpuIsMultiBoot)
   {
@@ -1947,6 +1971,18 @@ void CPUReset(GBASystem *gba)
   // clean io memory
   memset(gba->ioMem, 0, 0x400);
 
+#ifdef GSFOPT
+  if (gba->cpuIsMultiBoot)
+  {
+    memset(gba->rom_refs, 0, 0x40000);
+  }
+  else
+  {
+    memset(gba->rom_refs, 0, 0x2000000);
+  }
+  gba->bytes_used = 0;
+#endif
+
   gba->DISPCNT  = 0x0080;
   gba->DISPSTAT = 0x0000;
   gba->VCOUNT   = (gba->useBios && !gba->skipBios) ? 0 :0x007E;
@@ -2183,6 +2219,10 @@ void CPULoop(GBASystem *gba, int ticks)
   int timerOverflow = 0;
   // variable used by the CPU core
   gba->cpuTotalTicks = 0;
+
+#ifdef GSFOPT
+  gba->min_ref_update = 0xff;
+#endif
 
   gba->cpuBreakLoop = false;
   gba->cpuNextEvent = CPUUpdateTicks(gba);

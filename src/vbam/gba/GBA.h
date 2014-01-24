@@ -351,6 +351,12 @@ struct GBASystem
 
     GBA::Blip_Synth<GBA::blip_best_quality,1> pcm_synth [3]; // 32 kHz, 16 kHz, 8 kHz
 
+#ifdef GSFOPT
+    u8 * rom_refs;
+    u8 min_ref_update;
+    u32 bytes_used;
+#endif
+
     GBASystem();
 };
 

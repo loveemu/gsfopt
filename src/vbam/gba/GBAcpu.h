@@ -21,6 +21,7 @@ extern int thumbExecute(GBASystem *);
     WRITE16LE(((u16 *)&gba->ioMem[address]),value);\
   }\
 
+#ifndef GSFOPT
 #define ARM_PREFETCH \
   {\
     gba->cpuPrefetch[0] = CPUReadMemoryQuick(gba, gba->armNextPC);\
@@ -38,7 +39,26 @@ extern int thumbExecute(GBASystem *);
 
 #define THUMB_PREFETCH_NEXT\
   gba->cpuPrefetch[1] = CPUReadHalfWordQuick(gba, gba->armNextPC+2);
+#else
+// instructions should be marked at execution stage, not prefetch stage
+#define ARM_PREFETCH \
+  {\
+    gba->cpuPrefetch[0] = CPUReadMemoryQuickNoMark(gba, gba->armNextPC);\
+    gba->cpuPrefetch[1] = CPUReadMemoryQuickNoMark(gba, gba->armNextPC+4);\
+  }
 
+#define THUMB_PREFETCH \
+  {\
+    gba->cpuPrefetch[0] = CPUReadHalfWordQuickNoMark(gba, gba->armNextPC);\
+    gba->cpuPrefetch[1] = CPUReadHalfWordQuickNoMark(gba, gba->armNextPC+2);\
+  }
+
+#define ARM_PREFETCH_NEXT \
+  gba->cpuPrefetch[1] = CPUReadMemoryQuickNoMark(gba, gba->armNextPC+4);
+
+#define THUMB_PREFETCH_NEXT\
+  gba->cpuPrefetch[1] = CPUReadHalfWordQuickNoMark(gba, gba->armNextPC+2);
+#endif
 
 extern void CPUSwitchMode(GBASystem *, int mode, bool saveState, bool breakLoop);
 extern void CPUSwitchMode(GBASystem *, int mode, bool saveState);

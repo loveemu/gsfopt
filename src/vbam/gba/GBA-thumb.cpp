@@ -1618,6 +1618,10 @@ int thumbExecute(GBASystem *gba)
       gba->clockTicks = codeTicksAccessSeq16(gba, oldArmNextPC) + 1;
     gba->cpuTotalTicks += gba->clockTicks;
 
+#ifdef GSFOPT
+    CPUMarkMemoryAsRead(gba, oldArmNextPC, 2);
+#endif
+
   } while (gba->cpuTotalTicks < gba->cpuNextEvent && !gba->armState && !gba->holdState && !gba->SWITicks);
   return 1;
 }

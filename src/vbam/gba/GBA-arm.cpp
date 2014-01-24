@@ -2274,6 +2274,10 @@ int armExecute(GBASystem *gba)
             gba->clockTicks = 1 + codeTicksAccessSeq32(gba, oldArmNextPC);
         gba->cpuTotalTicks += gba->clockTicks;
 
+#ifdef GSFOPT
+        CPUMarkMemoryAsRead(gba, oldArmNextPC, 4);
+#endif
+
     } while (gba->cpuTotalTicks<gba->cpuNextEvent && gba->armState && !gba->holdState && !gba->SWITicks);
 
     return 1;

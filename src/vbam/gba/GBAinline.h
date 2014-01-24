@@ -16,6 +16,53 @@
 
 extern const u32 objTilesAddress[3];
 
+#ifdef GSFOPT
+static inline void CPUMarkMemoryAsRead(GBASystem *gba, u32 address, u32 size)
+{
+  for (u32 addr = address; addr < address + size; addr++)
+  {
+    u32 offset;
+
+    if (gba->cpuIsMultiBoot)
+    {
+      if ((addr >> 24) == 0x02)
+      {
+        offset = addr & 0x3FFFF;
+      }
+      else
+      {
+        continue;
+      }
+    }
+    else
+    {
+      if ((addr >> 24) >= 0x08 && (addr >> 24) <= 0x0D)
+      {
+        offset = addr & 0x1FFFFFF;
+      }
+      else
+      {
+        continue;
+      }
+    }
+
+    if (gba->rom_refs[offset] == 0)
+    {
+      gba->bytes_used++;
+    }
+    if (gba->min_ref_update > gba->rom_refs[offset])
+    {
+      gba->min_ref_update = gba->rom_refs[offset];
+    }
+    if (gba->rom_refs[offset] < 0xFF)
+    {
+      gba->rom_refs[offset]++;
+    }
+  }
+}
+#endif
+
+#ifndef GSFOPT
 #define CPUReadByteQuick(gba, addr) \
   (gba)->map[(addr)>>24].address[(addr) & (gba)->map[(addr)>>24].mask]
 
@@ -24,6 +71,34 @@ extern const u32 objTilesAddress[3];
 
 #define CPUReadMemoryQuick(gba, addr) \
   READ32LE(((u32*)&(gba)->map[(addr)>>24].address[(addr) & (gba)->map[(addr)>>24].mask]))
+#else
+#define CPUReadByteQuickNoMark(gba, addr) \
+  (gba)->map[(addr)>>24].address[(addr) & (gba)->map[(addr)>>24].mask]
+
+#define CPUReadHalfWordQuickNoMark(gba, addr) \
+  READ16LE(((u16*)&(gba)->map[(addr)>>24].address[(addr) & (gba)->map[(addr)>>24].mask]))
+
+#define CPUReadMemoryQuickNoMark(gba, addr) \
+  READ32LE(((u32*)&(gba)->map[(addr)>>24].address[(addr) & (gba)->map[(addr)>>24].mask]))
+
+static inline u8 CPUReadByteQuick(GBASystem *gba, u32 address)
+{
+  CPUMarkMemoryAsRead(gba, address, 1);
+  return CPUReadByteQuickNoMark(gba, address);
+}
+
+static inline u16 CPUReadHalfWordQuick(GBASystem *gba, u32 address)
+{
+  CPUMarkMemoryAsRead(gba, address & ~1, 2);
+  return CPUReadHalfWordQuickNoMark(gba, address & ~1);
+}
+
+static inline u32 CPUReadMemoryQuick(GBASystem *gba, u32 address)
+{
+  CPUMarkMemoryAsRead(gba, address & ~3, 4);
+  return CPUReadMemoryQuickNoMark(gba, address & ~3);
+}
+#endif
 
 static inline u32 CPUReadMemory(GBASystem *gba, u32 address)
 {
@@ -39,6 +114,12 @@ static inline u32 CPUReadMemory(GBASystem *gba, u32 address)
       value = READ32LE(((u32 *)&gba->bios[address & 0x3FFC]));
     break;
   case 2:
+#ifdef GSFOPT
+    if (gba->cpuIsMultiBoot)
+    {
+      CPUMarkMemoryAsRead(gba, address & ~3, 4);
+    }
+#endif
     value = READ32LE(((u32 *)&gba->workRAM[address & 0x3FFFC]));
     break;
   case 3:
@@ -77,6 +158,12 @@ static inline u32 CPUReadMemory(GBASystem *gba, u32 address)
   case 10:
   case 11:
   case 12:
+#ifdef GSFOPT
+    if (!gba->cpuIsMultiBoot)
+    {
+      CPUMarkMemoryAsRead(gba, address & ~3, 4);
+    }
+#endif
     value = READ32LE(((u32 *)&gba->rom[address&0x1FFFFFC]));
     break;
   case 13:
@@ -127,6 +214,12 @@ static inline u32 CPUReadHalfWord(GBASystem *gba, u32 address)
       value = READ16LE(((u16 *)&gba->bios[address & 0x3FFE]));
     break;
   case 2:
+#ifdef GSFOPT
+    if (gba->cpuIsMultiBoot)
+    {
+      CPUMarkMemoryAsRead(gba, address & ~1, 2);
+    }
+#endif
     value = READ16LE(((u16 *)&gba->workRAM[address & 0x3FFFE]));
     break;
   case 3:
@@ -178,7 +271,15 @@ static inline u32 CPUReadHalfWord(GBASystem *gba, u32 address)
     if(address == 0x80000c4 || address == 0x80000c6 || address == 0x80000c8)
       value = rtcRead(address);
     else
+    {
+#ifdef GSFOPT
+      if (!gba->cpuIsMultiBoot)
+      {
+        CPUMarkMemoryAsRead(gba, address & ~1, 2);
+      }
+#endif
       value = READ16LE(((u16 *)&gba->rom[address & 0x1FFFFFE]));
+    }
     break;
   case 13:
     if(gba->cpuEEPROMEnabled)
@@ -230,6 +331,12 @@ static inline u8 CPUReadByte(GBASystem *gba, u32 address)
     }
     return gba->bios[address & 0x3FFF];
   case 2:
+#ifdef GSFOPT
+    if (gba->cpuIsMultiBoot)
+    {
+      CPUMarkMemoryAsRead(gba, address, 1);
+    }
+#endif
     return gba->workRAM[address & 0x3FFFF];
   case 3:
     return gba->internalRAM[address & 0x7fff];
@@ -253,6 +360,12 @@ static inline u8 CPUReadByte(GBASystem *gba, u32 address)
   case 10:
   case 11:
   case 12:
+#ifdef GSFOPT
+    if (!gba->cpuIsMultiBoot)
+    {
+      CPUMarkMemoryAsRead(gba, address, 1);
+    }
+#endif
     return gba->rom[address & 0x1FFFFFF];
   case 13:
     if(gba->cpuEEPROMEnabled)
