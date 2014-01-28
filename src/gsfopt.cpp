@@ -24,6 +24,7 @@
 #define getcwd _getcwd
 #define chdir _chdir
 #define isnan _isnan
+#define strcasecmp _stricmp
 #else
 #include <unistd.h>
 #endif
@@ -242,7 +243,7 @@ bool GsfOpt::LoadROMFile(const std::string& filename)
 		}
 
 		const char * fileext = path_findext(filename.c_str());
-		bool multiboot = (fileext != NULL && _stricmp(fileext, ".wb") == 0);
+		bool multiboot = (fileext != NULL && strcasecmp(fileext, ".wb") == 0);
 
 		fp = fopen(filename.c_str(), "rb");
 		if (fp == NULL)
@@ -771,7 +772,6 @@ bool GsfOpt::SaveGSF(const std::string& filename, bool wipe_unused_data, std::ma
 {
 	u32 size = GetROMSize();
 	u8 * rom = new u8[size];
-	FILE * fp = NULL;
 	bool result = false;
 
 	if (!GetROM(rom, size, wipe_unused_data))

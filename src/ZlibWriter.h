@@ -8,6 +8,7 @@
 #include <zlib.h>
 #include <zconf.h>
 
+#include <string>
 #include <vector>
 
 class ZlibWriter

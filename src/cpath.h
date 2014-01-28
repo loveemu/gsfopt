@@ -101,7 +101,7 @@ static INLINE const char *path_findext(const char *path)
 	}
 	else
 	{
-		return path[strlen(path)];
+		return &path[strlen(path)];
 	}
 #endif
 }
