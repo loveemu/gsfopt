@@ -299,7 +299,7 @@ bool PSFFile::save(const std::string& filename, uint8_t version, uint8_t * reser
 	}
 
 	// size of program area
-	uint32_t exe_size = exe.size();
+	uint32_t exe_size = (uint32_t) exe.size();
 	data[0] = exe_size & 0xff;
 	data[1] = (exe_size >> 8) & 0xff;
 	data[2] = (exe_size >> 16) & 0xff;

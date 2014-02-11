@@ -5,6 +5,11 @@
 #define ZLIBREADER_H_INCLUDED
 
 #include <stdint.h>
+
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif
+
 #include <zlib.h>
 #include <zconf.h>
 
@@ -86,7 +91,7 @@ public:
 
 	static inline uint32_t crc32(const void * buf, size_t size)
 	{
-		uLong crc = ::crc32(0L, (const Bytef *) buf, size);
+		uLong crc = ::crc32(0L, (const Bytef *) buf, (uInt) size);
 		return (uint32_t) crc;
 	}
 

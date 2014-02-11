@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
+
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif
+
 #include <zlib.h>
 #include <zconf.h>
 
@@ -48,7 +53,7 @@ int ZlibWriter::write(const void * buf, size_t size)
 	zbuf_changed = true;
 
 	z.next_in = (Bytef *) buf;
-	z.avail_in = size;
+	z.avail_in = (uInt) size;
 	do
 	{
 		z.next_out = zchunk;
@@ -57,7 +62,7 @@ int ZlibWriter::write(const void * buf, size_t size)
 		zresult = deflate(&z, Z_NO_FLUSH);
 		if (zresult != Z_OK && zresult != Z_STREAM_END)
 		{
-			return size - z.avail_in;
+			return (int) (size - z.avail_in);
 		}
 
 		size_t bytes_written = ZLIB_CHUNK_SIZE - z.avail_out;
@@ -71,7 +76,7 @@ int ZlibWriter::write(const void * buf, size_t size)
 		}
 	} while(z.next_in != 0);
 
-	return size;
+	return (int) size;
 }
 
 bool ZlibWriter::flush() const

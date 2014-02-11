@@ -4,6 +4,11 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <stdint.h>
+
+#ifdef _WIN32
+#define ZLIB_WINAPI
+#endif
+
 #include <zlib.h>
 #include <zconf.h>
 
@@ -57,7 +62,7 @@ void ZlibReader::assign(const void * buf, size_t size)
 	{
 		zbuf.push_back(((uint8_t *)buf)[i]);
 	}
-	zbuf_crc = ::crc32(0L, (const Bytef *) buf, size);
+	zbuf_crc = ::crc32(0L, (const Bytef *) buf, (uInt) size);
 
 	reset_zlib();
 }
@@ -71,12 +76,12 @@ int ZlibReader::read(const void * buf, size_t size)
 		return 0;
 	}
 
-	uInt z_avail_in_old = zbuf.size() - zpos;
+	uInt z_avail_in_old = (uInt) (zbuf.size() - zpos);
 
 	z.next_in = ((Bytef *) &zbuf[0]) + zpos;
 	z.avail_in = z_avail_in_old;
 	z.next_out = (Bytef *) buf;
-	z.avail_out = size;
+	z.avail_out = (uInt) size;
 	zresult = inflate(&z, Z_SYNC_FLUSH);
 	if (zresult != Z_OK && zresult != Z_STREAM_END)
 	{
@@ -88,7 +93,7 @@ int ZlibReader::read(const void * buf, size_t size)
 	size_t bytes_read = (size - z.avail_out);
 	pos += bytes_read;
 
-	crc = ::crc32(crc, (const Bytef *) buf, bytes_read);
+	crc = ::crc32(crc, (const Bytef *) buf, (uInt) bytes_read);
 
 	return (int) bytes_read;
 }
