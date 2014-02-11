@@ -625,6 +625,8 @@ void GsfOpt::ShowOptimizeProgress() const
 	printf("Playtime = %s, ", ToTimeString(time_last_new_data).c_str());
 	printf("Time Remaining = %s, ", ToTimeString(std::max(0.0, optimize_endpoint - m_output.get_timer())).c_str());
 	printf("Optimize bytes = %d", m_system->bytes_used);
+	fflush(stdout);
+
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
@@ -639,6 +641,7 @@ void GsfOpt::ShowOptimizeResult() const
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\n");
+	fflush(stdout);
 }
 
 void GsfOpt::ResetOptimizerVariables()
