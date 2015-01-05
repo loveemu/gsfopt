@@ -12,6 +12,7 @@
 #include <vector>
 #include <iterator>
 #include <limits>
+#include <algorithm>
 
 #include "gsfopt.h"
 #include "cpath.h"
