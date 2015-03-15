@@ -74,7 +74,7 @@ int ZlibWriter::write(const void * buf, size_t size)
 				zbuf.push_back(zchunk[i]);
 			}
 		}
-	} while(z.next_in != 0);
+	} while (z.avail_in != 0);
 
 	return (int) size;
 }
@@ -111,7 +111,7 @@ bool ZlibWriter::flush() const
 				zbuf.push_back(zchunk[i]);
 			}
 		}
-	} while(z.next_in != 0);
+	} while (zresult != Z_STREAM_END);
 
 	zbuf_changed = false;
 	return true;
