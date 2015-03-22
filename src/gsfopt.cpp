@@ -812,7 +812,7 @@ bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
 
 		for (u32 offset = 0; offset < size; offset++)
 		{
-			if (rom_refs[offset] != 0 || (offset >= 0x00 && offset < 0xC0) || paranoid_count > 0)
+			if (rom_refs[offset] != 0 || offset < 0xC0 || paranoid_count > 0)
 			{
 				if (rom_refs[offset] != 0)
 				{
@@ -1227,7 +1227,7 @@ int main(int argc, char *argv[])
 				{
 					double oneshot_verify_length = opt.GetLoopVerifyLength() * 2;
 					opt.SetOneShotVerifyLength(oneshot_verify_length);
-					fprintf(stderr, "Warning: Max silence length is %s\n", GsfOpt::ToTimeString(oneshot_verify_length));
+					fprintf(stderr, "Warning: Max silence length is %s\n", GsfOpt::ToTimeString(oneshot_verify_length).c_str());
 				}
 			}
 			break;
