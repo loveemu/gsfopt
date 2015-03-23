@@ -28,7 +28,9 @@ public:
 	std::map<std::string, std::string> tags;
 
 	static PSFFile * load(const std::string& filename);
-	static bool save(const std::string& filename, uint8_t version, uint8_t * reserved, uint32_t reserved_size, const ZlibWriter& exe, std::map<std::string, std::string> tags);
+	bool save(const std::string& filename);
+	static bool save(const std::string& filename, uint8_t version, const uint8_t * reserved, uint32_t reserved_size, const ZlibWriter& exe, std::map<std::string, std::string> tags);
+	static bool save(const std::string& filename, uint8_t version, const uint8_t * reserved, uint32_t reserved_size, const uint8_t * compressed_exe, uint32_t compressed_exe_size, std::map<std::string, std::string> tags);
 	static bool IsPSFFile(const std::string& filename);
 
 private:

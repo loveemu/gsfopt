@@ -70,7 +70,7 @@ GsfOpt::~GsfOpt()
 	}
 }
 
-std::string GsfOpt::ToTimeString(double t)
+std::string GsfOpt::ToTimeString(double t, bool padding)
 {
 	if (isnan(t))
 	{
@@ -84,14 +84,49 @@ std::string GsfOpt::ToTimeString(double t)
 	hours %= 60;
 
 	char str[64];
-	if (hours == 0)
-	{
-		sprintf(str, "%02u:%06.3f", minutes, seconds);
-	}
-	else
+	if (hours != 0)
 	{
 		sprintf(str, "%u:%02u:%06.3f", hours, minutes, seconds);
 	}
+	else
+	{
+		if (padding)
+		{
+			sprintf(str, "%02u:%06.3f", minutes, seconds);
+		}
+		else
+		{
+			if (minutes != 0)
+			{
+				sprintf(str, "%u:%06.3f", minutes, seconds);
+			}
+			else
+			{
+				sprintf(str, "%.3f", seconds);
+			}
+		}
+	}
+
+	if (!padding)
+	{
+		size_t len = strlen(str);
+		for (int i = len - 1; i >= 0; i--)
+		{
+			if (str[i] == '0')
+			{
+				str[i] = '\0';
+			}
+			else
+			{
+				if (str[i] == '.')
+				{
+					str[i] = '\0';
+				}
+				break;
+			}
+		}
+	}
+
 	return str;
 }
 
@@ -540,7 +575,7 @@ void GsfOpt::Optimize(void)
 		loop_point_updated[i] = false;
 	}
 	loop_count = 0;
-	oneshot_start_point = 0.0;
+	oneshot_endpoint = 0.0;
 	oneshot = false;
 
 	double time_last_prog = 0.0;
@@ -633,7 +668,7 @@ void GsfOpt::DetectLoop()
 void GsfOpt::DetectOneShot()
 {
 	if (m_output.get_silence_length() >= oneshot_verify_length && loop_count != 0) {
-		oneshot_start_point = m_output.get_silence_start();
+		oneshot_endpoint = m_output.get_silence_start();
 		oneshot = true;
 	}
 	else {
@@ -647,7 +682,7 @@ void GsfOpt::AdjustOptimizationEndPoint()
 	{
 		if (oneshot)
 		{
-			song_endpoint = oneshot_start_point;
+			song_endpoint = oneshot_endpoint;
 			optimize_endpoint = m_output.get_timer();
 		}
 		else
@@ -1449,8 +1484,44 @@ int main(int argc, char *argv[])
 				}
 #endif
 
-				if (addGSFTags) {
-					printf("TODO: Set GSF tag of \"%s\"\n", out_path.c_str());
+				if (addGSFTags)
+				{
+					PSFFile * gsf = PSFFile::load(argv[argi]);
+					if (gsf == NULL)
+					{
+						fprintf(stderr, "Error: Invalid PSF file %s (file operation error)\n", argv[argi]);
+						return 1;
+					}
+
+					if (opt.IsOneShot())
+					{
+						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint(), false);
+
+						if (oneshotFadeLength >= 0.001)
+						{
+							gsf->tags["fade"] = GsfOpt::ToTimeString(oneshotFadeLength, false);
+						}
+						else
+						{
+							gsf->tags.erase("fade");
+						}
+					}
+					else
+					{
+						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetLoopPoint(), false);
+
+						if (loopFadeLength >= 0.001)
+						{
+							gsf->tags["fade"] = GsfOpt::ToTimeString(loopFadeLength, false);
+						}
+						else
+						{
+							gsf->tags.erase("fade");
+						}
+					}
+
+					gsf->save(out_path);
+					delete gsf;
 				}
 			}
 			break;

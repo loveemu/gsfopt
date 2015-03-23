@@ -76,9 +76,9 @@ public:
 		return oneshot;
 	}
 
-	inline double GetOneShotStartPoint(void) const
+	inline double GetOneShotEndPoint(void) const
 	{
-		return oneshot_start_point;
+		return oneshot_endpoint;
 	}
 
 	inline u8 GetTargetLoopCount(void) const
@@ -126,7 +126,7 @@ public:
 		return m_message;
 	}
 
-	static std::string ToTimeString(double t);
+	static std::string ToTimeString(double t, bool padding = true);
 	static double ToTimeValue(const std::string& str);
 
 protected:
@@ -217,7 +217,7 @@ protected:
 	double loop_point[256];
 	bool loop_point_updated[256];
 	u8 loop_count;
-	double oneshot_start_point;
+	double oneshot_endpoint;
 	bool oneshot;
 
 	u32 paranoid_bytes;
