@@ -90,20 +90,13 @@ std::string GsfOpt::ToTimeString(double t, bool padding)
 	}
 	else
 	{
-		if (padding)
+		if (padding || minutes != 0)
 		{
-			sprintf(str, "%02u:%06.3f", minutes, seconds);
+			sprintf(str, "%u:%06.3f", minutes, seconds);
 		}
 		else
 		{
-			if (minutes != 0)
-			{
-				sprintf(str, "%u:%06.3f", minutes, seconds);
-			}
-			else
-			{
-				sprintf(str, "%.3f", seconds);
-			}
+			sprintf(str, "%.3f", seconds);
 		}
 	}
 
@@ -212,6 +205,7 @@ double GsfOpt::ToTimeValue(const std::string& str)
 bool GsfOpt::LoadROM(const void *rom, u32 size, bool multiboot)
 {
 	rom_path = "";
+	rom_filename = "";
 	if (m_system->rom != NULL)
 	{
 		MergeRefs(rom_refs, m_system->rom_refs, GetROMSize());
@@ -262,7 +256,13 @@ bool GsfOpt::LoadROMFile(const std::string& filename)
 			load_result = LoadROM(rom_buf, rom_size, multiboot);
 			if (load_result)
 			{
-				rom_path = filename;
+				char tmppath[PATH_MAX];
+
+				path_getabspath(filename.c_str(), tmppath);
+				rom_path = tmppath;
+
+				path_basename(tmppath);
+				rom_filename = tmppath;
 			}
 		}
 
@@ -303,7 +303,13 @@ bool GsfOpt::LoadROMFile(const std::string& filename)
 		load_result = LoadROM(rom_buf, filesize, false);
 		if (load_result)
 		{
-			rom_path = filename;
+			char tmppath[PATH_MAX];
+
+			path_getabspath(filename.c_str(), tmppath);
+			rom_path = tmppath;
+
+			path_basename(tmppath);
+			rom_filename = tmppath;
 		}
 
 		delete [] rom_buf;
@@ -700,11 +706,12 @@ void GsfOpt::AdjustOptimizationEndPoint()
 
 void GsfOpt::ShowOptimizeProgress() const
 {
-	printf("Playtime = %s", ToTimeString(song_endpoint).c_str());
-	printf(", Time Remaining = %s", ToTimeString(std::max(0.0, optimize_endpoint - m_output.get_timer())).c_str());
+	printf("%s: ", rom_filename.substr(0, 24).c_str());
+	printf("Time = %s", ToTimeString(song_endpoint).c_str());
+	printf(", Remaining = %s", ToTimeString(std::max(0.0, optimize_endpoint - m_output.get_timer())).c_str());
 	if (!time_loop_based)
 	{
-		printf(", Optimize bytes = %d", m_system->bytes_used);
+		printf(", %d bytes", m_system->bytes_used);
 	}
 	else
 	{
@@ -712,6 +719,7 @@ void GsfOpt::ShowOptimizeProgress() const
 	}
 	fflush(stdout);
 
+	//       1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
@@ -719,20 +727,24 @@ void GsfOpt::ShowOptimizeProgress() const
 
 void GsfOpt::ShowOptimizeResult() const
 {
-	printf("Playtime = %s", ToTimeString(song_endpoint).c_str());
+	printf("%s: ", rom_filename.c_str());
+	printf("Time = %s", ToTimeString(song_endpoint).c_str());
 	if (!time_loop_based)
 	{
-		printf(", Optimize bytes = %d", m_system->bytes_used);
+		printf(", %d bytes", m_system->bytes_used);
 	}
 	else
 	{
 		if (oneshot)
 		{
-			printf(" - ONESHOT");
+			printf(" (One Shot)");
 		}
-		printf("        ");
+		else
+		{
+			printf(" (%d Loops)", target_loop_count);
+		}
 	}
-	printf("                              ");
+	printf("                                            ");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
@@ -1466,8 +1478,6 @@ int main(int argc, char *argv[])
 			{
 				// determine output filename
 				std::string out_path = argv[argi];
-
-				printf("%s\n", argv[argi]);
 
 				opt.ResetOptimizer();
 				if (!opt.LoadROMFile(argv[argi]))

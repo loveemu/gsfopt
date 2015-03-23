@@ -237,6 +237,7 @@ protected:
 
 private:
 	std::string rom_path;
+	std::string rom_filename;
 	u32 bytes_used_old;
 };
 
