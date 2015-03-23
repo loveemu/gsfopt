@@ -21,30 +21,30 @@ Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
 
 ### Options ###
 
--T [time]
+`-T [time]`
   : Runs the emulation till no new data has been found for [time] specified.
     Time is specified in mm:ss.nnn format   
     mm = minutes, ss = seoconds, nnn = milliseconds
 
--P [bytes]
+`-P [bytes]`
   : I am paranoid, and wish to assume that any data within [bytes] bytes of a used byte,
     is also used
 
 #### File Processing Modes ####
 
--f [gsf files]
+`-f [gsf files]`
   : Optimize single files, and in the process, convert minigsfs/gsflibs to single gsf files
 
--l [gsf files]
+`-l [gsf files]`
   : Optimize the gsflib using passed gsf files.
 
--r [gsf files]
+`-r [gsf files]`
   : Convert to Rom files, no optimization
 
--s [gsflib] [Hex offset] [Count]
+`-s [gsflib] [Hex offset] [Count]`
   : Optimize gsflib using a known offset/count
 
--t [options] [gsf files]
+`-t [options] [gsf files]`
   : Times the GSF files. (for auto tagging, use the -T option)
     Unlike psf playback, silence detection is MANDATORY
     Do NOT try to evade this with an excessively long silence detect time.
@@ -52,23 +52,23 @@ Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
 
 ##### [options] for -t #####
 
--V [count]
-  : Number of verify loops at end point. (Default 20)
+`-V [time]`
+  : Length of verify loops at end point. (Default 20 seconds)
 
--L [count]
+`-L [count]`
   : Number of loops to time for. (Default 2, max 255)
 
--T
+`-T`
   : Tag the songs with found time.
     A Fade is also added if the song is not detected to be one shot.
 
--F [time]
+`-F [time]`
   : Length of looping song fade. (default 10.000)
 
--f [time]
+`-f [time]`
   : Length of one shot song fade. (default 1.000)
 
--s [time]
+`-s [time]`
   : Time in seconds for silence detection (default 15 seconds)
     Max (2*Verify loop count) seconds.
 
