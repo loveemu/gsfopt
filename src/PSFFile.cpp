@@ -265,12 +265,12 @@ PSFFile * PSFFile::load(const std::string& filename)
 
 bool PSFFile::save(const std::string& filename)
 {
-	return save(filename, version, reserved.data(), reserved.size(), compressed_exe.compressed_data(), compressed_exe.compressed_size(), tags);
+	return save(filename, version, reserved.data(), (uint32_t)reserved.size(), compressed_exe.compressed_data(), (uint32_t)compressed_exe.compressed_size(), tags);
 }
 
 bool PSFFile::save(const std::string& filename, uint8_t version, const uint8_t * reserved, uint32_t reserved_size, const ZlibWriter& exe, std::map<std::string, std::string> tags)
 {
-	return save(filename, version, reserved, reserved_size, exe.data(), exe.size(), tags);
+	return save(filename, version, reserved, reserved_size, exe.data(), (uint32_t)exe.size(), tags);
 }
 
 bool PSFFile::save(const std::string& filename, uint8_t version, const uint8_t * reserved, uint32_t reserved_size, const uint8_t * compressed_exe, uint32_t compressed_exe_size, std::map<std::string, std::string> tags)
