@@ -6,7 +6,7 @@ Gsf set optimizer / timer created by Caitsith2, revised by loveemu.
 
 All ripped sets should be optimized before release, to remove unused code/data unrelated to music playback.
 
-This modified version uses vio2sf core, instead of old VisualBoyAdvance core.
+This modified version uses [viogsf (VBA-M)](https://github.com/kode54/viogsf) core, instead of old VisualBoyAdvance core.
 
 Downloads
 ---------
