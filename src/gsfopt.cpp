@@ -978,7 +978,7 @@ static void usage(const char * progname, bool extended)
 		printf("  : Length of looping song fade. (default 10.000)\n");
 		printf("\n");
 		printf("`-f [time]`\n");
-		printf("  : Length of one shot song fade. (default 1.000)\n");
+		printf("  : Length of one shot song postgap. (default 1.000)\n");
 		printf("\n");
 		printf("`-s [time]`\n");
 		printf("  : Time in seconds for silence detection (default 15 seconds)\n");
@@ -995,7 +995,7 @@ int main(int argc, char *argv[])
 	std::string out_name;
 
 	double loopFadeLength = 10.0;
-	double oneshotFadeLength = 1.0;
+	double oneshotPostgapLength = 1.0;
 	bool addGSFTags = false;
 
 	long l;
@@ -1190,7 +1190,7 @@ int main(int argc, char *argv[])
 							return 1;
 						}
 
-						oneshotFadeLength = GsfOpt::ToTimeValue(argv[argi + 1]);
+						oneshotPostgapLength = GsfOpt::ToTimeValue(argv[argi + 1]);
 						argi++;
 						break;
 
@@ -1495,16 +1495,8 @@ int main(int argc, char *argv[])
 
 					if (opt.IsOneShot())
 					{
-						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint(), false);
-
-						if (oneshotFadeLength >= 0.001)
-						{
-							gsf->tags["fade"] = GsfOpt::ToTimeString(oneshotFadeLength, false);
-						}
-						else
-						{
-							gsf->tags.erase("fade");
-						}
+						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint() + oneshotPostgapLength, false);
+						gsf->tags.erase("fade");
 					}
 					else
 					{

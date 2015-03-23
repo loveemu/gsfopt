@@ -66,7 +66,7 @@ Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
   : Length of looping song fade. (default 10.000)
 
 `-f [time]`
-  : Length of one shot song fade. (default 1.000)
+  : Length of one shot song postgap. (default 1.000)
 
 `-s [time]`
   : Time in seconds for silence detection (default 15 seconds)
