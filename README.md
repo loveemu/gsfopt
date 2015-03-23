@@ -6,15 +6,13 @@ Gsf set optimizer / timer created by Caitsith2, revised by loveemu.
 
 All ripped sets should be optimized before release, to remove unused code/data unrelated to music playback.
 
-This modified version fixes the fatal bug in the last official release (May 6, 2007)
-
-Caitsith2's original version can be found at GSF Central
-<http://www.caitsith2.com/gsf/ripping.html>
+This modified version uses vio2sf core, instead of old VisualBoyAdvance core.
 
 Downloads
 ---------
 
-- [gsfopt-20140119.7z](https://github.com/loveemu/gsfopt/releases/download/v1.0-vba172/gsfopt-20140119.7z)
+- [Latest release](https://github.com/loveemu/gsfopt/releases/latest)
+- [gsfopt 1.0 (Caitsith2's gsfopt + bugfix)](https://github.com/loveemu/gsfopt/releases/tag/v1.0-vba172)
 
 Usage
 -----
