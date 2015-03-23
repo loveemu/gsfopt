@@ -50,14 +50,11 @@ static inline void CPUMarkMemoryAsRead(GBASystem *gba, u32 address, u32 size)
     {
       gba->bytes_used++;
     }
-    if (gba->min_ref_update > gba->rom_refs[offset])
-    {
-      gba->min_ref_update = gba->rom_refs[offset];
-    }
     if (gba->rom_refs[offset] < 0xFF)
     {
       gba->rom_refs[offset]++;
-    }
+	  gba->rom_refs_histogram[gba->rom_refs[offset]]++;
+	}
   }
 }
 #endif

@@ -353,7 +353,7 @@ struct GBASystem
 
 #ifdef GSFOPT
     u8 * rom_refs;
-    u8 min_ref_update;
+    u32 rom_refs_histogram[256];
     u32 bytes_used;
 #endif
 

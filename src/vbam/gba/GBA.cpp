@@ -240,7 +240,6 @@ GBASystem::GBASystem()
 
 #ifdef GSFOPT
     rom_refs = NULL;
-    min_ref_update = 0xff;
     bytes_used = 0;
 #endif
 }
@@ -1972,13 +1971,16 @@ void CPUReset(GBASystem *gba)
   memset(gba->ioMem, 0, 0x400);
 
 #ifdef GSFOPT
+  memset(gba->rom_refs_histogram, 0, sizeof(gba->rom_refs_histogram));
   if (gba->cpuIsMultiBoot)
   {
     memset(gba->rom_refs, 0, 0x40000);
+    gba->rom_refs_histogram[0] = 0x40000;
   }
   else
   {
     memset(gba->rom_refs, 0, 0x2000000);
+	gba->rom_refs_histogram[0] = 0x2000000;
   }
   gba->bytes_used = 0;
 #endif
@@ -2219,10 +2221,6 @@ void CPULoop(GBASystem *gba, int ticks)
   int timerOverflow = 0;
   // variable used by the CPU core
   gba->cpuTotalTicks = 0;
-
-#ifdef GSFOPT
-  gba->min_ref_update = 0xff;
-#endif
 
   gba->cpuBreakLoop = false;
   gba->cpuNextEvent = CPUUpdateTicks(gba);

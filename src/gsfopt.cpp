@@ -31,7 +31,7 @@
 #endif
 
 #define APP_NAME    "gsfopt"
-#define APP_VER     "[2015-03-16]"
+#define APP_VER     "[2015-03-23]"
 #define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define GSF_PSF_VERSION	0x22
@@ -45,6 +45,10 @@ GsfOpt::GsfOpt() :
 	bytes_used(0),
 	optimize_timeout(300.0),
 	optimize_progress_frequency(0.2),
+	time_loop_based(false),
+	target_loop_count(2),
+	loop_verify_length(20.0),
+	oneshot_verify_length(15),
 	paranoid_bytes(0)
 {
 	m_system = new GBASystem;
@@ -519,6 +523,7 @@ bool GsfOpt::ReadGSFFile(const std::string& filename, unsigned int nesting_level
 void GsfOpt::ResetOptimizer(void)
 {
 	memset(rom_refs, 0, MAX_GBA_ROM_SIZE);
+	memset(rom_refs_histogram, 0, sizeof(rom_refs_histogram));
 	bytes_used = 0;
 }
 
@@ -532,8 +537,11 @@ void GsfOpt::Optimize(void)
 	for (int i = 0; i < 256; i++)
 	{
 		loop_point[i] = 0.0;
+		loop_point_updated[i] = false;
 	}
 	loop_count = 0;
+	oneshot_start_point = 0.0;
+	oneshot = false;
 
 	double time_last_prog = 0.0;
 	bool finished = false;
@@ -551,6 +559,9 @@ void GsfOpt::Optimize(void)
 
 		// loop detection
 		DetectLoop();
+
+		// oneshot detection
+		DetectOneShot();
 
 		// adjust endpoint
 		AdjustOptimizationEndPoint();
@@ -577,55 +588,93 @@ void GsfOpt::Optimize(void)
 
 void GsfOpt::DetectLoop()
 {
-	if (loop_count > m_system->min_ref_update)
+	// detect possible maximum value of loop count at the moment
+	u8 loop_count_expected_upper = 255;
+	for (int count = 1; count < 256; count++)
 	{
-		// some of loop-points are apparently wrong, invalidate them
-		while (loop_count > m_system->min_ref_update)
+		if (rom_refs_histogram[count] != m_system->rom_refs_histogram[count])
 		{
-			loop_point[loop_count] = 0.0;
-			loop_count--;
+			loop_count_expected_upper = count - 1;
+			break;
 		}
-		// update loop-point
-		loop_point[loop_count] = m_output.get_timer();
-		loop_count++;
 	}
-	else if (loop_count == m_system->min_ref_update)
+
+	// update loop point of new loops
+	for (int count = loop_count_expected_upper; count > 0; count--)
 	{
-		bool looped = true;
-
-		// check all previous loop-points
-		// (index 0 must be always set)
-		for (int i = 1; i < loop_count; i++)
+		if (loop_point_updated[count])
 		{
-			if (loop_point[i] == 0.0)
-			{
-				looped = false;
-				break;
-			}
+			loop_point[count] = m_output.get_timer();
+			loop_point_updated[count] = false;
 		}
+	}
 
-		// update loop-point
-		if (looped)
+	// verify the loop
+	for (int count = loop_count_expected_upper; count > 0; count--)
+	{
+		if (m_output.get_timer() - loop_point[count] >= loop_verify_length)
 		{
-			loop_point[loop_count] = m_output.get_timer();
-			if (loop_count < 0xff)
-			{
-				loop_count++;
-			}
+			loop_count = count;
+			break;
 		}
+	}
+
+	// update invalid loop points
+	for (int count = loop_count_expected_upper + 1; count < 256; count++)
+	{
+		loop_point[count] = m_output.get_timer();
+		loop_point_updated[count] = true;
+	}
+
+	// update histogram
+	memcpy(rom_refs_histogram, m_system->rom_refs_histogram, sizeof(rom_refs_histogram));
+}
+
+void GsfOpt::DetectOneShot()
+{
+	if (m_output.get_silence_length() >= oneshot_verify_length && loop_count != 0) {
+		oneshot_start_point = m_output.get_silence_start();
+		oneshot = true;
+	}
+	else {
+		oneshot = false;
 	}
 }
 
 void GsfOpt::AdjustOptimizationEndPoint()
 {
-	optimize_endpoint = time_last_new_data + optimize_timeout;
+	if (time_loop_based)
+	{
+		if (oneshot)
+		{
+			song_endpoint = oneshot_start_point;
+			optimize_endpoint = m_output.get_timer();
+		}
+		else
+		{
+			song_endpoint = loop_point[target_loop_count];
+			optimize_endpoint = loop_point[target_loop_count] + std::max<double>(loop_verify_length, oneshot_verify_length);
+		}
+	}
+	else
+	{
+		song_endpoint = time_last_new_data;
+		optimize_endpoint = time_last_new_data + optimize_timeout;
+	}
 }
 
 void GsfOpt::ShowOptimizeProgress() const
 {
-	printf("Playtime = %s, ", ToTimeString(time_last_new_data).c_str());
-	printf("Time Remaining = %s, ", ToTimeString(std::max(0.0, optimize_endpoint - m_output.get_timer())).c_str());
-	printf("Optimize bytes = %d", m_system->bytes_used);
+	printf("Playtime = %s", ToTimeString(song_endpoint).c_str());
+	printf(", Time Remaining = %s", ToTimeString(std::max(0.0, optimize_endpoint - m_output.get_timer())).c_str());
+	if (!time_loop_based)
+	{
+		printf(", Optimize bytes = %d", m_system->bytes_used);
+	}
+	else
+	{
+		printf(", Loop = %d", loop_count + 1);
+	}
 	fflush(stdout);
 
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
@@ -635,8 +684,19 @@ void GsfOpt::ShowOptimizeProgress() const
 
 void GsfOpt::ShowOptimizeResult() const
 {
-	printf("Playtime = %s, ", ToTimeString(time_last_new_data).c_str());
-	printf("Optimize bytes = %d", m_system->bytes_used);
+	printf("Playtime = %s", ToTimeString(song_endpoint).c_str());
+	if (!time_loop_based)
+	{
+		printf(", Optimize bytes = %d", m_system->bytes_used);
+	}
+	else
+	{
+		if (oneshot)
+		{
+			printf(" - ONESHOT");
+		}
+		printf("        ");
+	}
 	printf("                              ");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
 	printf("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b");
@@ -899,8 +959,9 @@ int main(int argc, char *argv[])
 
 	std::string out_name;
 
+	double loopFadeLength = 10.0;
+	double oneshotFadeLength = 1.0;
 	bool addGSFTags = false;
-	bool timeoutSpecified = false;
 
 	long l;
 	unsigned long ul;
@@ -973,6 +1034,7 @@ int main(int argc, char *argv[])
 
 		case 't':
 			mode = GSFOPT_PROC_T;
+			opt.SetTimeLoopBased(true);
 
 			if (argc <= (argi + 1))
 			{
@@ -990,7 +1052,6 @@ int main(int argc, char *argv[])
 			}
 
 			opt.SetTimeout(GsfOpt::ToTimeValue(argv[argi + 1]));
-			timeoutSpecified = true;
 			argi++;
 			break;
 
@@ -1046,7 +1107,7 @@ int main(int argc, char *argv[])
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
 							return 1;
 						}
-						//verify_loops = atoi(argv[argi + 1]); // TODO
+						opt.SetLoopVerifyLength(GsfOpt::ToTimeValue(argv[argi + 1]));
 						argi++;
 						break;
 
@@ -1057,12 +1118,18 @@ int main(int argc, char *argv[])
 							return 1;
 						}
 
-						//number_loops = atoi(argv[argi + 1]); // TODO
-						//if(number_loops > 255)
-						//{
-						//	printf("Max Loop count is 255\n");
-						//	return usage(argv[0], false);
-						//}
+						l = strtol(argv[argi + 1], &endptr, 0);
+						if (*endptr != '\0' || errno == ERANGE || l < 0)
+						{
+							fprintf(stderr, "Error: Number format error \"%s\"\n", argv[argi + 1]);
+							return 1;
+						}
+						if (l == 0 || l > 255)
+						{
+							fprintf(stderr, "Error: Loop count must be in range (1..255)\n");
+							return 1;
+						}
+						opt.SetTargetLoopCount((u8)l);
 						argi++;
 						break;
 
@@ -1077,7 +1144,7 @@ int main(int argc, char *argv[])
 							return 1;
 						}
 
-						//LoopFade = GsfOpt::ToTimeValue(argv[argi + 1]); // TODO
+						loopFadeLength = GsfOpt::ToTimeValue(argv[argi + 1]);
 						argi++;
 						break;
 
@@ -1088,7 +1155,7 @@ int main(int argc, char *argv[])
 							return 1;
 						}
 
-						//OneShotFade = GsfOpt::ToTimeValue(argv[argi + 1]); // TODO
+						oneshotFadeLength = GsfOpt::ToTimeValue(argv[argi + 1]);
 						argi++;
 						break;
 
@@ -1099,7 +1166,7 @@ int main(int argc, char *argv[])
 							return 1;
 						}
 
-						//silencelength = atoi(argv[argi + 1]); // TODO
+						opt.SetOneShotVerifyLength(GsfOpt::ToTimeValue(argv[argi + 1]));
 						argi++;
 						break;
 
@@ -1108,11 +1175,13 @@ int main(int argc, char *argv[])
 						return 1;
 					}
 				}
-				//if (silencelength > (verify_loops * 2)) // TODO
-				//{
-				//	silencelength = verify_loops * 2;
-				//	printf("WARNING: Max silence length is %d\n",silencelength);
-				//}
+
+				if (opt.GetOneShotVerifyLength() > (opt.GetLoopVerifyLength() * 2))
+				{
+					double oneshot_verify_length = opt.GetLoopVerifyLength() * 2;
+					opt.SetOneShotVerifyLength(oneshot_verify_length);
+					fprintf(stderr, "Warning: Max silence length is %s\n", GsfOpt::ToTimeString(oneshot_verify_length));
+				}
 			}
 			break;
 		}
@@ -1345,6 +1414,44 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				opt.SaveROM(out_path, false);
+			}
+			break;
+		}
+
+		case GSFOPT_PROC_T:
+		{
+			if (!out_name.empty())
+			{
+				fprintf(stderr, "Error: Output filename cannot be specified for \"-t\".\n");
+				return 1;
+			}
+
+			// optimize
+			for (; argi < argc; argi++)
+			{
+				// determine output filename
+				std::string out_path = argv[argi];
+
+				printf("%s\n", argv[argi]);
+
+				opt.ResetOptimizer();
+				if (!opt.LoadROMFile(argv[argi]))
+				{
+					fprintf(stderr, "Error: %s\n", opt.message().c_str());
+					return 1;
+				}
+				opt.Optimize();
+
+#ifdef _DEBUG
+				for (int count = 1; count <= opt.GetTargetLoopCount(); count++)
+				{
+					printf("Loop Point %d = %s\n", count, opt.GetLoopPointString(count).c_str());
+				}
+#endif
+
+				if (addGSFTags) {
+					printf("TODO: Set GSF tag of \"%s\"\n", out_path.c_str());
+				}
 			}
 			break;
 		}

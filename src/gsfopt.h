@@ -41,6 +41,76 @@ public:
 		optimize_timeout = timeout;
 	}
 
+	inline bool IsTimeLoopBased(void) const
+	{
+		return time_loop_based;
+	}
+
+	inline void SetTimeLoopBased(bool sw)
+	{
+		time_loop_based = sw;
+	}
+
+	inline double GetLoopPoint(void)
+	{
+		return GetLoopPoint(target_loop_count);
+	}
+
+	inline double GetLoopPoint(u8 count)
+	{
+		return loop_point[count];
+	}
+
+	inline std::string GetLoopPointString(void)
+	{
+		return GetLoopPointString(target_loop_count);
+	}
+
+	inline std::string GetLoopPointString(u8 count)
+	{
+		return ToTimeString(GetLoopPoint(count));
+	}
+
+	inline bool IsOneShot(void) const
+	{
+		return oneshot;
+	}
+
+	inline double GetOneShotStartPoint(void) const
+	{
+		return oneshot_start_point;
+	}
+
+	inline u8 GetTargetLoopCount(void) const
+	{
+		return target_loop_count;
+	}
+
+	inline void SetTargetLoopCount(u8 count)
+	{
+		target_loop_count = count;
+	}
+
+	inline double GetLoopVerifyLength(void) const
+	{
+		return loop_verify_length;
+	}
+
+	inline void SetLoopVerifyLength(double length)
+	{
+		loop_verify_length = length;
+	}
+
+	inline double GetOneShotVerifyLength(void) const
+	{
+		return oneshot_verify_length;
+	}
+
+	inline void SetOneShotVerifyLength(double length)
+	{
+		oneshot_verify_length = length;
+	}
+
 	inline u32 GetParanoidSize(void) const
 	{
 		return paranoid_bytes;
@@ -131,14 +201,24 @@ protected:
 	gsf_sound_out m_output;
 
 	u8 * rom_refs;
+	u32 rom_refs_histogram[256];
 	u32 bytes_used;
+	double song_endpoint;
 	double optimize_timeout;
 	double optimize_endpoint;
 	double optimize_progress_frequency;
 
+	bool time_loop_based;
+	u8 target_loop_count;
+	double loop_verify_length;
+	double oneshot_verify_length;
+
 	double time_last_new_data;
 	double loop_point[256];
+	bool loop_point_updated[256];
 	u8 loop_count;
+	double oneshot_start_point;
+	bool oneshot;
 
 	u32 paranoid_bytes;
 
@@ -147,6 +227,7 @@ protected:
 	static u32 MergeRefs(u8 * dst_refs, const u8 * src_refs, u32 size);
 
 	virtual void DetectLoop(void);
+	virtual void DetectOneShot(void);
 	virtual void AdjustOptimizationEndPoint(void);
 	virtual void ResetOptimizerVariables(void);
 	virtual void ShowOptimizeProgress(void) const;
