@@ -921,7 +921,7 @@ static void usage(const char * progname, bool extended)
 	printf("Usage\n");
 	printf("-----\n");
 	printf("\n");
-	printf("Syntax: %s [options] [-s or -l or -f or -t] [gsf files]\n", progname);
+	printf("Syntax: `%s [options] [-s or -l or -f or -t] [gsf files]`\n", progname);
 	printf("\n");
 
 	if (!extended)
@@ -930,7 +930,7 @@ static void usage(const char * progname, bool extended)
 	}
 	else
 	{
-		printf("### Options ###\n");
+		printf("### Options\n");
 		printf("\n");
 		printf("`-T [time]`\n");
 		printf("  : Runs the emulation till no new data has been found for [time] specified.\n");
@@ -941,7 +941,7 @@ static void usage(const char * progname, bool extended)
 		printf("  : I am paranoid, and wish to assume that any data \n");
 		printf("    within [bytes] bytes of a used byte, is also used\n");
 		printf("\n");
-		printf("#### File Processing Modes (-s) (-l) (-f) (-r) (-t) ####\n");
+		printf("#### File Processing Modes (-s) (-l) (-f) (-r) (-t)\n");
 		printf("\n");
 		printf("`-f [gsf files]`\n");
 		printf("  : Optimize single files, and in the process, convert\n");
@@ -962,7 +962,7 @@ static void usage(const char * progname, bool extended)
 		printf("    Do NOT try to evade this with an excessively long silence detect time.\n");
 		printf("    (The max time is less than 2*Verify loops for silence detection)\n");
 		printf("\n");
-		printf("#### Options for -t ####\n");
+		printf("#### Options for -t\n");
 		printf("\n");
 		printf("`-V [time]`\n");
 		printf("  : Length of verify loops at end point. (Default 20 seconds)\n");

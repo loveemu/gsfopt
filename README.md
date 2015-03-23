@@ -17,9 +17,9 @@ Downloads
 Usage
 -----
 
-Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
+Syntax: `gsfopt [options] [-s or -l or -f or -t] [gsf files]`
 
-### Options ###
+### Options
 
 `-T [time]`
   : Runs the emulation till no new data has been found for [time] specified.
@@ -30,7 +30,7 @@ Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
   : I am paranoid, and wish to assume that any data within [bytes] bytes of a used byte,
     is also used
 
-#### File Processing Modes ####
+#### File Processing Modes
 
 `-f [gsf files]`
   : Optimize single files, and in the process, convert minigsfs/gsflibs to single gsf files
@@ -50,7 +50,7 @@ Syntax: gsfopt [options] [-s or -l or -f or -t] [gsf files]
     Do NOT try to evade this with an excessively long silence detect time.
     (The max time is less than 2*Verify loops for silence detection)
 
-##### [options] for -t #####
+##### Options for -t
 
 `-V [time]`
   : Length of verify loops at end point. (Default 20 seconds)
