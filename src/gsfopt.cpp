@@ -982,7 +982,7 @@ static void usage(const char * progname, bool extended)
 		printf("`-L [count]`\n");
 		printf("  : Number of loops to time for. (Default 2, max 255)\n");
 		printf("\n");
-		printf("`-T\n`");
+		printf("`-T`\n");
 		printf("  : Tag the songs with found time.\n");
 		printf("    A Fade is also added if the song is not detected to be one shot.\n");
 		printf("\n");
