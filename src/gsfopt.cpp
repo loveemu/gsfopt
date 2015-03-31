@@ -1033,9 +1033,8 @@ int main(int argc, char *argv[])
 			break;
 		}
 
-		switch (argv[argi][1])
+		if (strcmp(argv[argi], "-f") == 0)  //regular .gsf optimization. this option doubles as minigsf->gsf converter
 		{
-		case 'f':  //regular .gsf optimization. this option doubles as minigsf->gsf converter
 			mode = GSFOPT_PROC_F;
 
 			if (argc <= (argi + 1))
@@ -1044,9 +1043,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			argi++;
-			break;
-
-		case 'r':
+		}
+		else if (strcmp(argv[argi], "-r") == 0)
+		{
 			mode = GSFOPT_PROC_R;
 
 			if (argc <= (argi + 1))
@@ -1055,9 +1054,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			argi++;
-			break;
-
-		case 's':  //Song value gsflib optimization.
+		}
+		else if (strcmp(argv[argi], "-s") == 0)  //Song value gsflib optimization.
+		{
 			mode = GSFOPT_PROC_S;
 
 			if (argc <= (argi + 3))
@@ -1066,9 +1065,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			argi++;
-			break;
-
-		case 'l':  //gsflib optimization.
+		}
+		else if (strcmp(argv[argi], "-l") == 0)  //gsflib optimization.
+		{
 			mode = GSFOPT_PROC_L;
 
 			if (argc <= (argi + 1))
@@ -1077,9 +1076,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			argi++;
-			break;
-
-		case 't':
+		}
+		else if (strcmp(argv[argi], "-t") == 0)
+		{
 			mode = GSFOPT_PROC_T;
 			opt.SetTimeLoopBased(true);
 
@@ -1089,9 +1088,9 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			argi++;
-			break;
-
-		case 'T': // Optimize while no new data found for.
+		}
+		else if (strcmp(argv[argi], "-T") == 0) // Optimize while no new data found for.
+		{
 			if (argc <= (argi + 1))
 			{
 				fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1100,9 +1099,9 @@ int main(int argc, char *argv[])
 
 			opt.SetTimeout(GsfOpt::ToTimeValue(argv[argi + 1]));
 			argi++;
-			break;
-
-		case 'P': // I am paranoid. assume x bytes within a used byte is also used.
+		}
+		else if (strcmp(argv[argi], "-P") == 0) // I am paranoid. assume x bytes within a used byte is also used.
+		{
 			if (argc <= (argi + 1))
 			{
 				fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1117,9 +1116,9 @@ int main(int argc, char *argv[])
 			}
 			opt.SetParanoidSize(l);
 			argi++;
-			break;
-
-		case 'o': // output name
+		}
+		else if (strcmp(argv[argi], "-o") == 0) // output name
+		{
 			if (argc <= (argi + 1))
 			{
 				fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1128,9 +1127,9 @@ int main(int argc, char *argv[])
 
 			out_name = argv[argi + 1];
 			argi++;
-			break;
-
-		default:
+		}
+		else
+		{
 			fprintf(stderr, "Error: Unknown option \"%s\"\n", argv[argi]);
 			return 1;
 		}
@@ -1146,9 +1145,8 @@ int main(int argc, char *argv[])
 						break;
 					}
 
-					switch(argv[argi][1])
+					if (strcmp(argv[argi], "-V") == 0)
 					{
-					case 'V':
 						if (argc <= (argi + 1))
 						{
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1156,9 +1154,9 @@ int main(int argc, char *argv[])
 						}
 						opt.SetLoopVerifyLength(GsfOpt::ToTimeValue(argv[argi + 1]));
 						argi++;
-						break;
-
-					case 'L':
+					}
+					else if (strcmp(argv[argi], "-L") == 0)
+					{
 						if (argc <= (argi + 1))
 						{
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1178,13 +1176,13 @@ int main(int argc, char *argv[])
 						}
 						opt.SetTargetLoopCount((u8)l);
 						argi++;
-						break;
-
-					case 'T':
+					}
+					else if (strcmp(argv[argi], "-T") == 0)
+					{
 						addGSFTags = true;
-						break;
-
-					case 'F':
+					}
+					else if (strcmp(argv[argi], "-F") == 0)
+					{
 						if (argc <= (argi + 1))
 						{
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1193,9 +1191,9 @@ int main(int argc, char *argv[])
 
 						loopFadeLength = GsfOpt::ToTimeValue(argv[argi + 1]);
 						argi++;
-						break;
-
-					case 'f':
+					}
+					else if (strcmp(argv[argi], "-f") == 0)
+					{
 						if (argc <= (argi + 1))
 						{
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1204,9 +1202,9 @@ int main(int argc, char *argv[])
 
 						oneshotPostgapLength = GsfOpt::ToTimeValue(argv[argi + 1]);
 						argi++;
-						break;
-
-					case 's':
+					}
+					else if (strcmp(argv[argi], "-s") == 0)
+					{
 						if (argc <= (argi + 1))
 						{
 							fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
@@ -1215,9 +1213,9 @@ int main(int argc, char *argv[])
 
 						opt.SetOneShotVerifyLength(GsfOpt::ToTimeValue(argv[argi + 1]));
 						argi++;
-						break;
-
-					default:
+					}
+					else
+					{
 						fprintf(stderr, "Error: Unknown option \"%s\"\n", argv[argi]);
 						return 1;
 					}
