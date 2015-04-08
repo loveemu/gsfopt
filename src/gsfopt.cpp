@@ -873,12 +873,6 @@ bool GsfOpt::SaveROM(const std::string& filename, bool wipe_unused_data) const
 	return result;
 }
 
-bool GsfOpt::SaveGSF(const std::string& filename, bool wipe_unused_data) const
-{
-	std::map<std::string, std::string> tags;
-	return SaveGSF(filename, wipe_unused_data, tags);
-}
-
 bool GsfOpt::SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags) const
 {
 	u32 size = GetROMSize();
@@ -1014,6 +1008,8 @@ int main(int argc, char *argv[])
 	unsigned long ul;
 	char * endptr = NULL;
 
+	char *psfby = NULL;
+
 	if (argc >= 2 && (strcmp(argv[1], "-?") == 0 || strcmp(argv[1], "--help") == 0))
 	{
 		usage(argv[0], true);
@@ -1126,6 +1122,17 @@ int main(int argc, char *argv[])
 			}
 
 			out_name = argv[argi + 1];
+			argi++;
+		}
+		else if (strcmp(argv[argi], "--psfby") == 0 || strcmp(argv[argi], "--gsfby") == 0)
+		{
+			if (argc <= (argi + 1))
+			{
+				fprintf(stderr, "Error: Too few arguments for \"%s\"\n", argv[argi]);
+				return 1;
+			}
+
+			psfby = argv[argi + 1];
 			argi++;
 		}
 		else
@@ -1314,7 +1321,12 @@ int main(int argc, char *argv[])
 				opt.Optimize();
 			}
 
-			opt.SaveGSF(out_path, true);
+			std::map<std::string, std::string> tags;
+			if (psfby != NULL && strcmp(psfby, "") != 0) {
+				tags["gsfby"] = psfby;
+			}
+
+			opt.SaveGSF(out_path, true, tags);
 			break;
 		}
 
@@ -1361,7 +1373,12 @@ int main(int argc, char *argv[])
 				opt.Optimize();
 			}
 
-			opt.SaveGSF(out_path, true);
+			std::map<std::string, std::string> tags;
+			if (psfby != NULL && strcmp(psfby, "") != 0) {
+				tags["gsfby"] = psfby;
+			}
+
+			opt.SaveGSF(out_path, true, tags);
 			break;
 		}
 
@@ -1412,7 +1429,13 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				opt.Optimize();
-				opt.SaveGSF(out_path, true);
+
+				std::map<std::string, std::string> tags;
+				if (psfby != NULL && strcmp(psfby, "") != 0) {
+					tags["gsfby"] = psfby;
+				}
+
+				opt.SaveGSF(out_path, true, tags);
 			}
 			break;
 		}

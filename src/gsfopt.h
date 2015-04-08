@@ -23,7 +23,6 @@ public:
 
 	bool GetROM(void * rom, u32 size, bool wipe_unused_data) const;
 	bool SaveROM(const std::string& filename, bool wipe_unused_data) const;
-	bool SaveGSF(const std::string& filename, bool wipe_unused_data) const;
 	bool SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags) const;
 
 	inline u32 GetROMSize(void) const
