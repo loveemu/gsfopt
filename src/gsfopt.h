@@ -80,6 +80,11 @@ public:
 		return oneshot_endpoint;
 	}
 
+	inline double GetInitialSilenceLength(void) const
+	{
+		return initial_silence_length;
+	}
+
 	inline u8 GetTargetLoopCount(void) const
 	{
 		return target_loop_count;
@@ -140,9 +145,14 @@ protected:
 		u16 silence_threshold;
 		u32 silence_start;
 
+		bool initial_silence_captured;
+		uint32_t initial_silence_samples;
+
 		gsf_sound_out() :
 			sample_rate(44100),
-			silence_threshold(8)
+			silence_threshold(9),
+			initial_silence_samples(8),
+			initial_silence_captured(false)
 		{
 			reset_timer();
 		}
@@ -159,16 +169,22 @@ protected:
 			for (unsigned int i = 0; i < (bytes / 2); i++)
 			{
 				s16 samp = ((s16 *)samples)[i];
-				if ((samp + silence_threshold) >= 0 && (samp + silence_threshold) < (silence_threshold * 2))
+				if ((samp + silence_threshold) >= 0 && (samp + silence_threshold) <= (silence_threshold * 2))
 				{
 					if (silent_samples_received == 0)
 					{
 						silence_start = samples_received;
 					}
 					silent_samples_received++;
+
+					if (!initial_silence_captured)
+					{
+						initial_silence_samples = silent_samples_received;
+					}
 				}
 				else
 				{
+					initial_silence_captured = true;
 					silence_start = samples_received;
 					silent_samples_received = 0;
 				}
@@ -180,6 +196,8 @@ protected:
 			samples_received = 0;
 			silence_start = 0;
 			silent_samples_received = 0;
+			initial_silence_samples = 0;
+			initial_silence_captured = false;
 		}
 
 		double get_timer(void) const
@@ -195,6 +213,11 @@ protected:
 		double get_silence_length(void) const
 		{
 			return (double) silent_samples_received / 2 / sample_rate;
+		}
+
+		double get_initial_silence_length(void) const
+		{
+			return (double)initial_silence_samples / 2 / sample_rate;
 		}
 	};
 	gsf_sound_out m_output;
@@ -218,6 +241,7 @@ protected:
 	u8 loop_count;
 	double oneshot_endpoint;
 	bool oneshot;
+	double initial_silence_length;
 
 	u32 paranoid_bytes;
 

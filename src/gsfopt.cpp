@@ -583,6 +583,7 @@ void GsfOpt::Optimize(void)
 	loop_count = 0;
 	oneshot_endpoint = 0.0;
 	oneshot = false;
+	initial_silence_length = 0.0;
 
 	double time_last_prog = 0.0;
 	bool finished = false;
@@ -591,6 +592,8 @@ void GsfOpt::Optimize(void)
 	{
 		bytes_used_old = m_system->bytes_used;
 		CPULoop(m_system, 250000);
+
+		initial_silence_length = m_output.get_initial_silence_length();
 
 		// any updates?
 		if (m_system->bytes_used != bytes_used_old)
@@ -621,6 +624,8 @@ void GsfOpt::Optimize(void)
 			time_last_prog = time_current;
 		}
 	} while(!finished);
+
+	initial_silence_length = std::min(initial_silence_length, song_endpoint);
 
 	timer_uninit();
 
@@ -728,13 +733,18 @@ void GsfOpt::ShowOptimizeProgress() const
 void GsfOpt::ShowOptimizeResult() const
 {
 	printf("%s: ", rom_filename.c_str());
-	printf("Time = %s", ToTimeString(song_endpoint).c_str());
+
 	if (!time_loop_based)
 	{
+		printf("Time = %s", ToTimeString(song_endpoint).c_str());
 		printf(", %d bytes", m_system->bytes_used);
 	}
 	else
 	{
+		printf("Time = %s, Silence = %s",
+			ToTimeString(song_endpoint - initial_silence_length).c_str(),
+			ToTimeString(initial_silence_length).c_str());
+
 		if (oneshot)
 		{
 			printf(" (One Shot)");
@@ -1526,12 +1536,12 @@ int main(int argc, char *argv[])
 
 					if (opt.IsOneShot())
 					{
-						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint() + oneshotPostgapLength, false);
-						gsf->tags.erase("fade");
+						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint() + oneshotPostgapLength - opt.GetInitialSilenceLength(), false);
+						gsf->tags["fade"] = "0";
 					}
 					else
 					{
-						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetLoopPoint(), false);
+						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetLoopPoint() - opt.GetInitialSilenceLength(), false);
 
 						if (loopFadeLength >= 0.001)
 						{
@@ -1539,7 +1549,7 @@ int main(int argc, char *argv[])
 						}
 						else
 						{
-							gsf->tags.erase("fade");
+							gsf->tags["fade"] = "0";
 						}
 					}
 
