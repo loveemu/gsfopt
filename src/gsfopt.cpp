@@ -31,7 +31,7 @@
 #endif
 
 #define APP_NAME    "gsfopt"
-#define APP_VER     "[2015-03-23]"
+#define APP_VER     "[2015-04-12]"
 #define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define GSF_PSF_VERSION	0x22
