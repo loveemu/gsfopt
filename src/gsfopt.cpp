@@ -31,7 +31,7 @@
 #endif
 
 #define APP_NAME    "gsfopt"
-#define APP_VER     "[2015-04-12]"
+#define APP_VER     "[2015-07-01]"
 #define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define GSF_PSF_VERSION	0x22
@@ -1536,7 +1536,14 @@ int main(int argc, char *argv[])
 
 					if (opt.IsOneShot())
 					{
-						gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint() + oneshotPostgapLength - opt.GetInitialSilenceLength(), false);
+						if (opt.GetOneShotEndPoint() == opt.GetInitialSilenceLength())
+						{
+							gsf->tags["length"] = "0";
+						}
+						else
+						{
+							gsf->tags["length"] = GsfOpt::ToTimeString(opt.GetOneShotEndPoint() + oneshotPostgapLength - opt.GetInitialSilenceLength(), false);
+						}
 						gsf->tags["fade"] = "0";
 					}
 					else
