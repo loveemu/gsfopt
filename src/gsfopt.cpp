@@ -31,7 +31,7 @@
 #endif
 
 #define APP_NAME    "gsfopt"
-#define APP_VER     "[2015-07-01]"
+#define APP_VER     "[2015-11-01]"
 #define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define GSF_PSF_VERSION	0x22
@@ -553,6 +553,8 @@ bool GsfOpt::ReadGSFFile(const std::string& filename, unsigned int nesting_level
 			chdir(savedcwd);
 			return false;
 		}
+
+		libN++;
 	}
 
 	m_message = filename + " - " + "Loaded successfully";
