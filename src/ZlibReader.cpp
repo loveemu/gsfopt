@@ -5,10 +5,6 @@
 #include <memory.h>
 #include <stdint.h>
 
-#ifdef _WIN32
-#define ZLIB_WINAPI
-#endif
-
 #include <zlib.h>
 #include <zconf.h>
 

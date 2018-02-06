@@ -1,5 +1,6 @@
 gsfopt
 ======
+[![Travis Build Status](https://travis-ci.org/loveemu/gsfopt.svg?branch=master)](https://travis-ci.org/loveemu/gsfopt) [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/l60u4ncb82mejcbc/branch/master?svg=true)](https://ci.appveyor.com/project/loveemu/gsfopt/branch/master)
 
 Gsf set optimizer / timer created by Caitsith2, revised by loveemu.
 <https://github.com/loveemu/gsfopt>
