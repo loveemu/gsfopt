@@ -1322,10 +1322,10 @@ int main(int argc, char *argv[])
 				printf("Optimizing %s  Song value %X\n", argv[argi], song);
 
 				u8 patch[4] = {
-					song & 0xff,
-					(song >> 8) & 0xff,
-					(song >> 16) & 0xff,
-					(song >> 24) & 0xff,
+					static_cast<uint8_t>(song & 0xff),
+					static_cast<uint8_t>((song >> 8) & 0xff),
+					static_cast<uint8_t>((song >> 16) & 0xff),
+					static_cast<uint8_t>((song >> 24) & 0xff),
 				};
 				opt.PatchROM(minigsf_offset, patch, minigsf_size);
 				opt.ResetGame();
