@@ -54,6 +54,15 @@ set(SRCS
     src/ZlibWriter.cpp
 )
 
+set(HDRS
+    src/gsfopt.h
+    src/PSFFile.h
+    src/ZlibReader.h
+    src/ZlibWriter.h
+    src/cpath.h
+    src/ctimer.h
+)
+
 set(VIOGSF_SRCS
     src/vbam/apu/Blip_Buffer.cpp
     src/vbam/apu/Effects_Buffer.cpp
@@ -67,7 +76,26 @@ set(VIOGSF_SRCS
     src/vbam/gba/Sound.cpp
 )
 
-add_executable(gsfopt ${SRCS} ${VIOGSF_SRCS})
+set(VIOGSF_HDRS
+    src/vbam/apu/blargg_common.h
+    src/vbam/apu/blargg_config.h
+    src/vbam/apu/blargg_source.h
+    src/vbam/apu/Blip_Buffer.h
+    src/vbam/apu/Effects_Buffer.h
+    src/vbam/apu/Gb_Apu.h
+    src/vbam/apu/Gb_Oscs.h
+    src/vbam/apu/Multi_Buffer.h
+    src/vbam/common/Types.h
+    src/vbam/common/Port.h
+    src/vbam/gba/bios.h
+    src/vbam/gba/GBA.h
+    src/vbam/gba/GBAcpu.h
+    src/vbam/gba/GBAinline.h
+    src/vbam/gba/Globals.h
+    src/vbam/gba/Sound.h
+)
+
+add_executable(gsfopt ${SRCS} ${HDRS} ${VIOGSF_SRCS} ${VIOGSF_HDRS})
 
 if(ZLIB_FOUND)
     include_directories(${ZLIB_INCLUDE_DIRS})
