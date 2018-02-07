@@ -4,8 +4,6 @@ project(gsfopt C CXX)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(VERSION "1.1.0")
-
 add_definitions(-DGSFOPT)
 
 if(MSVC)

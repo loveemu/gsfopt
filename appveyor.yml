@@ -25,7 +25,7 @@ environment:
     APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 
 init:
-  - git config --global core.autocrlf true
+  - git config --global core.autocrlf input
 
 build_script:
   - cmake -G"%generator%" -H. -Bbuild
@@ -36,7 +36,7 @@ after_build:
   - ps: $env:gitrev = git describe --tags
   - ps: $env:my_version = "$env:gitrev"
   - set package_name=gsfopt-%my_version%-%arch%
-  - copy build\%config%\gsfopt.exe .
+  - copy "build\%config%\gsfopt.exe" .
   - 7z a %package_name%.zip gsfopt.exe README.md LICENSE
 
 artifacts:
