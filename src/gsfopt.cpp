@@ -31,7 +31,7 @@
 #endif
 
 #define APP_NAME    "gsfopt"
-#define APP_VER     "[2015-11-01]"
+#define APP_VER     "[2018-05-31]"
 #define APP_URL     "http://github.com/loveemu/gsfopt"
 
 #define GSF_PSF_VERSION	0x22
@@ -773,13 +773,13 @@ u32 GsfOpt::MergeRefs(u8 * dst_refs, const u8 * src_refs, u32 size)
 	u32 bytes_used = 0;
 	for (u32 i = 0; i < size; i++)
 	{
-		if (dst_refs[i] + src_refs[i] <= 0xff)
+		if ((unsigned int)dst_refs[i] + src_refs[i] <= 0xff)
 		{
 			dst_refs[i] += src_refs[i];
 		}
 		else
 		{
-			dst_refs[i] += 0xff;
+			dst_refs[i] = 0xff;
 		}
 
 		if (dst_refs[i] != 0)
