@@ -103,7 +103,7 @@ std::string GsfOpt::ToTimeString(double t, bool padding)
 	if (!padding)
 	{
 		size_t len = strlen(str);
-		for (size_t i = len - 1; i >= 0; i--)
+		for (off_t i = (off_t)(len - 1); i >= 0; i--)
 		{
 			if (str[i] == '0')
 			{
