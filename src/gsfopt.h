@@ -115,14 +115,24 @@ public:
 		oneshot_verify_length = length;
 	}
 
-	inline u32 GetParanoidSize(void) const
+	inline u32 GetParanoidClosedAreaFillSize(void) const
 	{
-		return paranoid_bytes;
+		return paranoid_closed_area_fill_size;
 	}
 
-	inline void SetParanoidSize(u32 size)
+	inline void SetParanoidClosedAreaFillSize(u32 size)
 	{
-		paranoid_bytes = size;
+		paranoid_closed_area_fill_size = size;
+	}
+
+	inline u32 GetParanoidPostFillSize(void) const
+	{
+		return paranoid_post_fill_size;
+	}
+
+	inline void SetParanoidPostFillSize(u32 size)
+	{
+		paranoid_post_fill_size = size;
 	}
 
 	inline const std::string& message(void) const
@@ -243,7 +253,8 @@ protected:
 	bool oneshot;
 	double initial_silence_length;
 
-	u32 paranoid_bytes;
+	u32 paranoid_closed_area_fill_size;
+	u32 paranoid_post_fill_size;
 
 	bool ReadGSFFile(const std::string& filename, unsigned int nesting_level, u8 * rom_buf, u32 * ptr_entrypoint, u32 * ptr_rom_size);
 
