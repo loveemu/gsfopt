@@ -21,9 +21,9 @@ public:
 	void ResetOptimizer(void);
 	void Optimize(void);
 
-	bool GetROM(void * rom, u32 size, bool wipe_unused_data) const;
-	bool SaveROM(const std::string& filename, bool wipe_unused_data) const;
-	bool SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags) const;
+	bool GetROM(void * rom, u32 size, bool wipe_unused_data);
+	bool SaveROM(const std::string& filename, bool wipe_unused_data);
+	bool SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags);
 
 	inline u32 GetROMSize(void) const
 	{
@@ -133,6 +133,16 @@ public:
 	inline void SetParanoidPostFillSize(u32 size)
 	{
 		paranoid_post_fill_size = size;
+	}
+
+	inline u32 GetParanoidFilledSize(void) const
+	{
+		return paranoid_filled_size;
+	}
+
+	inline u32 GetCoveredSize() const
+	{
+		return covered_size;
 	}
 
 	inline const std::string& message(void) const
@@ -255,6 +265,8 @@ protected:
 
 	u32 paranoid_closed_area_fill_size;
 	u32 paranoid_post_fill_size;
+	u32 paranoid_filled_size;
+	u32 covered_size;
 
 	bool ReadGSFFile(const std::string& filename, unsigned int nesting_level, u8 * rom_buf, u32 * ptr_entrypoint, u32 * ptr_rom_size);
 

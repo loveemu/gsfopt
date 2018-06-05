@@ -50,7 +50,9 @@ GsfOpt::GsfOpt() :
 	loop_verify_length(20.0),
 	oneshot_verify_length(15),
 	paranoid_closed_area_fill_size(3),
-	paranoid_post_fill_size(0)
+	paranoid_post_fill_size(0),
+	paranoid_filled_size(0),
+	covered_size(0)
 {
 	m_system = new GBASystem;
 	rom_refs = new u8[MAX_GBA_ROM_SIZE];
@@ -791,7 +793,7 @@ u32 GsfOpt::MergeRefs(u8 * dst_refs, const u8 * src_refs, u32 size)
 	return bytes_used;
 }
 
-bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
+bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data)
 {
 	u8 * gba_rom = NULL;
 	u32 rom_size = GetROMSize();
@@ -824,12 +826,23 @@ bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
 		u32 paranoid_unused_area_size = 0;
 		u32 paranoid_post_fill_count = 0;
 
+		u32 covered_size = 0;
+		u32 paranoid_filled = 0;
+		this->covered_size = 0;
+		this->paranoid_filled_size = 0;
+
+		auto is_preserved = [] (u32 offset) -> bool { return offset < 0xC0; };
 		for (u32 offset = 0; offset < size; offset++) {
-			bool is_header = offset < 0xC0;
-			bool is_offset_used = rom_refs[offset] != 0 || is_header;
+			bool is_offset_used = rom_refs[offset] != 0 || is_preserved(offset);
 
 			if (is_offset_used || paranoid_post_fill_count > 0) {
 				((u8 *)rom)[offset] = gba_rom[offset];
+
+				if (is_offset_used) {
+					covered_size++;
+				} else {
+					paranoid_filled++;
+				}
 
 				if (paranoid_post_fill_count > 0) {
 					paranoid_post_fill_count--;
@@ -843,8 +856,13 @@ bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
 
 				if (paranoid_unused_area_size <= paranoid_closed_area_fill_size) {
 					while (paranoid_unused_area_size > 0) {
-						((u8 *)rom)[offset - paranoid_unused_area_size] = gba_rom[offset - paranoid_unused_area_size];
+						u32 fill_offset = offset - paranoid_unused_area_size;
+						((u8 *)rom)[fill_offset] = gba_rom[fill_offset];
 						paranoid_unused_area_size--;
+
+						if (rom_refs[fill_offset] == 0 && !is_preserved(fill_offset)) {
+							paranoid_filled++;
+						}
 					}
 				}
 				paranoid_unused_area_size = 0;
@@ -852,6 +870,9 @@ bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
 				paranoid_unused_area_size++;
 			}
 		}
+
+		this->covered_size = covered_size;
+		this->paranoid_filled_size = paranoid_filled;
 
 		delete [] rom_refs;
 	}
@@ -863,7 +884,7 @@ bool GsfOpt::GetROM(void * rom, u32 size, bool wipe_unused_data) const
 	return true;
 }
 
-bool GsfOpt::SaveROM(const std::string& filename, bool wipe_unused_data) const
+bool GsfOpt::SaveROM(const std::string& filename, bool wipe_unused_data)
 {
 	u32 size = GetROMSize();
 	u8 * rom = new u8[size];
@@ -895,7 +916,7 @@ bool GsfOpt::SaveROM(const std::string& filename, bool wipe_unused_data) const
 	return result;
 }
 
-bool GsfOpt::SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags) const
+bool GsfOpt::SaveGSF(const std::string& filename, bool wipe_unused_data, std::map<std::string, std::string>& tags)
 {
 	u32 size = GetROMSize();
 	u8 * rom = new u8[size];
@@ -1341,11 +1362,6 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			if (opt.GetParanoidPostFillSize() > 0 || opt.GetParanoidClosedAreaFillSize() > 0) {
-				printf("I am paranoid. (closed area = %d bytes, post = %d bytes)\n",
-					opt.GetParanoidClosedAreaFillSize(), opt.GetParanoidPostFillSize());
-			}
-
 			// optimize
 			opt.ResetOptimizer();
 			if (!opt.LoadROMFile(argv[argi]))
@@ -1375,6 +1391,19 @@ int main(int argc, char *argv[])
 			}
 
 			opt.SaveGSF(out_path, true, tags);
+
+			if (opt.GetParanoidClosedAreaFillSize() > 0) {
+				printf("Preserved any data within %d bytes between two used bytes.\n",
+					opt.GetParanoidClosedAreaFillSize());
+			}
+
+			if (opt.GetParanoidPostFillSize() > 0) {
+				printf("Preserved any data within %d trailing bytes of a used byte.\n",
+					opt.GetParanoidPostFillSize());
+			}
+
+			printf("Covered %u bytes. Preserved %d extra bytes.\n", opt.GetCoveredSize(), opt.GetParanoidFilledSize());
+
 			break;
 		}
 
@@ -1407,11 +1436,6 @@ int main(int argc, char *argv[])
 				}
 			}
 
-			if (opt.GetParanoidPostFillSize() > 0 || opt.GetParanoidClosedAreaFillSize() > 0) {
-				printf("I am paranoid. (closed area = %d bytes, post = %d bytes)\n",
-					opt.GetParanoidClosedAreaFillSize(), opt.GetParanoidPostFillSize());
-			}
-
 			// optimize
 			opt.ResetOptimizer();
 			for (; argi < argc; argi++)
@@ -1432,6 +1456,19 @@ int main(int argc, char *argv[])
 			}
 
 			opt.SaveGSF(out_path, true, tags);
+
+			if (opt.GetParanoidClosedAreaFillSize() > 0) {
+				printf("Preserved any data within %d bytes between two used bytes.\n",
+					opt.GetParanoidClosedAreaFillSize());
+			}
+
+			if (opt.GetParanoidPostFillSize() > 0) {
+				printf("Preserved any data within %d trailing bytes of a used byte.\n",
+					opt.GetParanoidPostFillSize());
+			}
+
+			printf("Covered %u bytes. Preserved %d extra bytes.\n", opt.GetCoveredSize(), opt.GetParanoidFilledSize());
+
 			break;
 		}
 
@@ -1441,11 +1478,6 @@ int main(int argc, char *argv[])
 			{
 				fprintf(stderr, "Error: Output filename cannot be specified to multiple ROMs.\n");
 				return 1;
-			}
-
-			if (opt.GetParanoidPostFillSize() > 0 || opt.GetParanoidClosedAreaFillSize() > 0) {
-				printf("I am paranoid. (closed area = %d bytes, post = %d bytes)\n",
-					opt.GetParanoidClosedAreaFillSize(), opt.GetParanoidPostFillSize());
 			}
 
 			// optimize
@@ -1494,6 +1526,18 @@ int main(int argc, char *argv[])
 				}
 
 				opt.SaveGSF(out_path, true, tags);
+
+				if (opt.GetParanoidClosedAreaFillSize() > 0) {
+					printf("Preserved any data within %d bytes between two used bytes.\n",
+						opt.GetParanoidClosedAreaFillSize());
+				}
+
+				if (opt.GetParanoidPostFillSize() > 0) {
+					printf("Preserved any data within %d trailing bytes of a used byte.\n",
+						opt.GetParanoidPostFillSize());
+				}
+
+				printf("Covered %u bytes. Preserved %d extra bytes.\n", opt.GetCoveredSize(), opt.GetParanoidFilledSize());
 			}
 			break;
 		}
