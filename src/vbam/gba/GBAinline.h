@@ -5,14 +5,76 @@
 #include "../common/Types.h"
 #include "Sound.h"
 
-#define eepromRead(a) 0
-#define eepromWrite(a, v) 1
-#define flashRead(a) 0
-#define rtcRead(a) 0
-#define systemGetSensorX() 0
-#define systemGetSensorY() 0
-#define agbPrintWrite(a, v) 1
-#define rtcWrite(a, v) 1
+#ifdef WIN32
+#include <stdio.h>
+#include <stdarg.h>
+#include <Windows.h>
+
+static int g_numWarnings = 0;
+static const int k_maxWarnings = 256;
+#endif
+
+inline void trace(const char * format, ...) {
+#ifdef WIN32
+  if (g_numWarnings > k_maxWarnings)
+    return;
+
+  va_list args;
+  va_start(args, format);
+  char str[1024];
+  int n = _vsnprintf(str, sizeof(str), format, args);
+  OutputDebugStringA(str);
+  va_end(args);
+
+  if (g_numWarnings == 0) {
+    fprintf(stderr, "%s\n", str);
+	fprintf(stderr, "Note: more warnings will be streamed to debug output.\n");
+  } else if (g_numWarnings == k_maxWarnings) {
+    OutputDebugStringA("[gsfopt] Too many warnings. Logging is now disabled to prevent speed down.");
+  }
+
+  g_numWarnings++;
+#endif
+}
+
+inline int eepromRead(u32 address) {
+  trace("[gsfopt] Warning: EEPROM read from 0x%08X", address);
+  return 0;
+}
+
+inline void eepromWrite(u32 address, u8 value) {
+  trace("[gsfopt] Warning: EEPROM write to 0x%08X", address);
+}
+
+inline u8 flashRead(u32 address) {
+  trace("[gsfopt] Warning: Flash read from 0x%08X", address);
+  return 0;
+}
+
+inline u16 rtcRead(u32 address) {
+  trace("[gsfopt] Warning: RTC read from 0x%08X", address);
+  return 0;
+}
+
+inline int systemGetSensorX() {
+  trace("[gsfopt] Warning: Sensor X read");
+  return 0;
+}
+
+inline int systemGetSensorY() {
+  trace("[gsfopt] Warning: Sensor Y read");
+  return 0;
+}
+
+inline bool agbPrintWrite(u32 address, u16 value) {
+  trace("[gsfopt] Warning: AGBPrint write to 0x%08X", address);
+  return true;
+}
+
+inline bool rtcWrite(u32 address, u16 value) {
+  trace("[gsfopt] Warning: RTC write to 0x%08X", address);
+  return true;
+}
 
 extern const u32 objTilesAddress[3];
 
