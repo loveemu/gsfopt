@@ -18,7 +18,7 @@ inline void trace(const char * format, ...) {
   va_list args;
   va_start(args, format);
   char str[256];
-  int n = _vsnprintf(str, sizeof(str), format, args);
+  int n = vsnprintf(str, sizeof(str), format, args);
   fprintf(stderr, "%s\n", str);
   va_end(args);
 
