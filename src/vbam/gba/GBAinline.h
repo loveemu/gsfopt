@@ -5,36 +5,28 @@
 #include "../common/Types.h"
 #include "Sound.h"
 
-#ifdef WIN32
 #include <stdio.h>
 #include <stdarg.h>
-#include <Windows.h>
 
 static int g_numWarnings = 0;
-static const int k_maxWarnings = 256;
-#endif
+static const int k_maxWarnings = 20;
 
 inline void trace(const char * format, ...) {
-#ifdef WIN32
   if (g_numWarnings > k_maxWarnings)
     return;
 
   va_list args;
   va_start(args, format);
-  char str[1024];
+  char str[256];
   int n = _vsnprintf(str, sizeof(str), format, args);
-  OutputDebugStringA(str);
+  fprintf(stderr, "%s\n", str);
   va_end(args);
 
-  if (g_numWarnings == 0) {
-    fprintf(stderr, "%s\n", str);
-	fprintf(stderr, "Note: more warnings will be streamed to debug output.\n");
-  } else if (g_numWarnings == k_maxWarnings) {
-    OutputDebugStringA("[gsfopt] Too many warnings. Logging is now disabled to prevent speed down.");
+  if (g_numWarnings == k_maxWarnings) {
+    fprintf(stderr, "[gsfopt] Too many warnings. Logging is now disabled to prevent speed down.\n");
   }
 
   g_numWarnings++;
-#endif
 }
 
 inline int eepromRead(u32 address) {
