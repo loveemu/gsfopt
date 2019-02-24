@@ -197,7 +197,7 @@ static inline u32 CPUReadMemory(GBASystem *gba, u32 address)
 		  goto unreadable;
 	  break;
   case 5:
-    trace(g_paletteReadWarned, "Warning: Palette RAM read from 0x%08X", raw_address);
+    trace(g_paletteReadWarned, "Info: Palette RAM read from 0x%08X", raw_address);
     value = READ32LE(((u32 *)&gba->paletteRAM[address & 0x3fC]));
     break;
   case 6:
@@ -209,11 +209,11 @@ static inline u32 CPUReadMemory(GBASystem *gba, u32 address)
     }
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-    trace(g_vramReadWarned, "Warning: VRAM read from 0x%08X", raw_address);
+    trace(g_vramReadWarned, "Info: VRAM read from 0x%08X", raw_address);
     value = READ32LE(((u32 *)&gba->vram[address]));
     break;
   case 7:
-    trace(g_oamReadWarned, "Warning: OAM read from 0x%08X", raw_address);
+    trace(g_oamReadWarned, "Info: OAM read from 0x%08X", raw_address);
     value = READ32LE(((u32 *)&gba->oam[address & 0x3FC]));
     break;
   case 8:
@@ -311,7 +311,7 @@ static inline u32 CPUReadHalfWord(GBASystem *gba, u32 address)
     else goto unreadable;
     break;
   case 5:
-    trace(g_paletteReadWarned, "Warning: Palette RAM read from 0x%08X", raw_address);
+    trace(g_paletteReadWarned, "Info: Palette RAM read from 0x%08X", raw_address);
     value = READ16LE(((u16 *)&gba->paletteRAM[address & 0x3fe]));
     break;
   case 6:
@@ -323,11 +323,11 @@ static inline u32 CPUReadHalfWord(GBASystem *gba, u32 address)
     }
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-    trace(g_vramReadWarned, "Warning: VRAM read from 0x%08X", raw_address);
+    trace(g_vramReadWarned, "Info: VRAM read from 0x%08X", raw_address);
     value = READ16LE(((u16 *)&gba->vram[address]));
     break;
   case 7:
-    trace(g_oamReadWarned, "Warning: OAM read from 0x%08X", raw_address);
+    trace(g_oamReadWarned, "Info: OAM read from 0x%08X", raw_address);
     value = READ16LE(((u16 *)&gba->oam[address & 0x3fe]));
     break;
   case 8:
@@ -413,7 +413,7 @@ static inline u8 CPUReadByte(GBASystem *gba, u32 address)
       return gba->ioMem[address & 0x3ff];
     else goto unreadable;
   case 5:
-    trace(g_paletteReadWarned, "Warning: Palette RAM read from 0x%08X", raw_address);
+    trace(g_paletteReadWarned, "Info: Palette RAM read from 0x%08X", raw_address);
     return gba->paletteRAM[address & 0x3ff];
   case 6:
     address = (address & 0x1ffff);
@@ -421,10 +421,10 @@ static inline u8 CPUReadByte(GBASystem *gba, u32 address)
       return 0;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-    trace(g_vramReadWarned, "Warning: VRAM read from 0x%08X", raw_address);
+    trace(g_vramReadWarned, "Info: VRAM read from 0x%08X", raw_address);
     return gba->vram[address];
   case 7:
-    trace(g_oamReadWarned, "Warning: OAM read from 0x%08X", raw_address);
+    trace(g_oamReadWarned, "Info: OAM read from 0x%08X", raw_address);
     return gba->oam[address & 0x3ff];
   case 8:
   case 9:
@@ -490,7 +490,7 @@ static inline void CPUWriteMemory(GBASystem *gba, u32 address, u32 value)
     } else goto unwritable;
     break;
   case 0x05:
-      trace(g_paletteWriteWarned, "Warning: Palette RAM write to 0x%08X", raw_address);
+      trace(g_paletteWriteWarned, "Info: Palette RAM write to 0x%08X", raw_address);
       WRITE32LE(((u32 *)&gba->paletteRAM[address & 0x3FC]), value);
     break;
   case 0x06:
@@ -500,11 +500,11 @@ static inline void CPUWriteMemory(GBASystem *gba, u32 address, u32 value)
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
 
-      trace(g_vramWriteWarned, "Warning: VRAM write to 0x%08X", raw_address);
+      trace(g_vramWriteWarned, "Info: VRAM write to 0x%08X", raw_address);
       WRITE32LE(((u32 *)&gba->vram[address]), value);
     break;
   case 0x07:
-      trace(g_oamWriteWarned, "Warning: OAM write to 0x%08X", raw_address);
+      trace(g_oamWriteWarned, "Info: OAM write to 0x%08X", raw_address);
       WRITE32LE(((u32 *)&gba->oam[address & 0x3fc]), value);
     break;
   case 0x0D:
@@ -537,7 +537,7 @@ static inline void CPUWriteHalfWord(GBASystem *gba, u32 address, u16 value)
     else goto unwritable;
     break;
   case 5:
-      trace(g_paletteWriteWarned, "Warning: Palette RAM write to 0x%08X", raw_address);
+      trace(g_paletteWriteWarned, "Info: Palette RAM write to 0x%08X", raw_address);
       WRITE16LE(((u16 *)&gba->paletteRAM[address & 0x3fe]), value);
     break;
   case 6:
@@ -546,11 +546,11 @@ static inline void CPUWriteHalfWord(GBASystem *gba, u32 address, u16 value)
       return;
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
-      trace(g_vramWriteWarned, "Warning: VRAM write to 0x%08X", raw_address);
+      trace(g_vramWriteWarned, "Info: VRAM write to 0x%08X", raw_address);
       WRITE16LE(((u16 *)&gba->vram[address]), value);
     break;
   case 7:
-      trace(g_oamWriteWarned, "Warning: OAM write to 0x%08X", raw_address);
+      trace(g_oamWriteWarned, "Info: OAM write to 0x%08X", raw_address);
       WRITE16LE(((u16 *)&gba->oam[address & 0x3fe]), value);
     break;
   case 8:
@@ -648,7 +648,7 @@ static inline void CPUWriteByte(GBASystem *gba, u32 address, u8 b)
     } else goto unwritable;
     break;
   case 5:
-    trace(g_paletteWriteWarned, "Warning: Palette RAM write to 0x%08X", raw_address);
+    trace(g_paletteWriteWarned, "Info: Palette RAM write to 0x%08X", raw_address);
 
     // no need to switch
     *((u16 *)&gba->paletteRAM[address & 0x3FE]) = (b << 8) | b;
@@ -660,7 +660,7 @@ static inline void CPUWriteByte(GBASystem *gba, u32 address, u8 b)
     if ((address & 0x18000) == 0x18000)
       address &= 0x17fff;
 
-    trace(g_vramWriteWarned, "Warning: VRAM write to 0x%08X", raw_address);
+    trace(g_vramWriteWarned, "Info: VRAM write to 0x%08X", raw_address);
 
     // no need to switch
     // byte writes to OBJ VRAM are ignored
@@ -670,7 +670,7 @@ static inline void CPUWriteByte(GBASystem *gba, u32 address, u8 b)
     }
     break;
   case 7:
-    trace(g_oamWriteWarned, "Warning: OAM write to 0x%08X", raw_address);
+    trace(g_oamWriteWarned, "Info: OAM write to 0x%08X", raw_address);
     // no need to switch
     // byte writes to OAM are ignored
     //    *((u16 *)&oam[address & 0x3FE]) = (b << 8) | b;
